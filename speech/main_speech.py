@@ -44,10 +44,8 @@ async def main(audio: str) -> str:
     stop_flag = False
     threads = await transcribe_task(dir_name, lsdir_reversed)
     stop_flag = True
-    print('thread stopped')
     while not stop_flag:
         await asyncio.sleep(0.2)
-    print('against while')
     res_text = await add_prompt(''.join(thread for thread in threads))
     shutil.rmtree(dir_name)
     logging.info('speech completed')
@@ -55,8 +53,6 @@ async def main(audio: str) -> str:
 
 
 if __name__ == "__main__":
-    print(main())
-
+    main()
     end_time = time.time()
     elapsed_time = end_time - start_time
-    print('Время Исполнения: ', elapsed_time)
