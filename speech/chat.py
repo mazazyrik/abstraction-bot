@@ -2,7 +2,7 @@ import logging
 from gigachat import GigaChat
 
 
-def add_prompt(text):
+async def add_prompt(text):
     logging.info('add_prompt started')
     error_text = ('К сожалению, нейросеть не смогла расшифровать этот текст. '
                   'Попробуйте ещё раз.')

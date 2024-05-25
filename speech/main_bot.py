@@ -100,7 +100,7 @@ async def main_speech_func(message, name, aval_guests):
 
     to_mp3(f"{name}.ogg")
 
-    ans = await transcribe_audio_thread(f"{name}.mp3")
+    ans = await speech_main(f"{name}.mp3")
 
     await message.answer(ans)
     await bot.delete_message(message.chat.id, msg.message_id)
