@@ -20,23 +20,23 @@ def transcribe_audio_thread(audio_file: str):
 
 
 def main(audio: str) -> str:
-    logging.debug('main started')
+    logging.info('main started')
     dir_name = audio.split(".")[0].lower()
 
     slice_audio(audio)
-    logging.debug('slice completed')
+    logging.info('slice completed')
     lsdir = os.listdir(dir_name)
     lsdir_reversed = lsdir[::-1]
 
     threads = [transcribe_audio_thread(
         f'{dir_name}/{file}') for file in lsdir_reversed]
-    logging.debug('threads created')
+    logging.info('threads created')
 
     res = ''.join(thread for thread in threads)
 
     res_text = add_prompt(res)
     shutil.rmtree(dir_name)
-
+    logging.info('speech completed')
     return res_text
 
 
