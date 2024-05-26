@@ -90,37 +90,55 @@ async def cmd_try(message: types.Message):
         await message.answer('Отправляй свое голосовое')
 
 
-async def main_speech_func(message, name, aval_guests):
-    file_id = message.voice.file_id
-    file = await bot.get_file(file_id)
-    file_path = file.file_path
-
-    msg = await message.reply("Загрузка...")
-    await bot.download_file(file_path, f"{name}.ogg")
-
-    to_mp3(f"{name}.ogg")
-
+async def main_speech_func(message, name, msg):
     ans = await speech_main(f"{name}.mp3")
 
     await message.answer(ans)
     await bot.delete_message(message.chat.id, msg.message_id)
-    os.remove(f"{name}.ogg")
-    os.remove(f"{name}.mp3")
-    if name in aval_guests:
-        Guest.update(made_speech=True).where(
-            Guest.user_id == message.from_user.id).execute()
 
 
-@dp.message(F.voice)
+@dp.message(F.content_type.in_({'audio', 'voice'}))
 async def voice_message_handler(message: types.Message):
     name = message.from_user.username
     premium_users = [user.username for user in UserAuth.select().where(
         UserAuth.premium == True)]
     aval_guests = [guest.username for guest in Guest.select().where(
         Guest.made_speech == False)]
-
     if name in (premium_users or aval_guests):
-        await main_speech_func(message, name, aval_guests)
+        if message.audio is not None:
+            file_id = message.audio.file_id
+            file = await bot.get_file(file_id)
+            file_path = file.file_path
+            try:
+                await bot.download_file(file_path, f"{name}.mp3")
+                msg = await message.reply("Загрузка...")
+                await main_speech_func(message, name, msg)
+                os.remove(f"{name}.mp3")
+            except FileExistsError:
+                await message.reply(
+                    "Вы не можете отправить новый запрос, пока не закончите предыдущий!"
+                )
+
+        else:
+            file_id = message.voice.file_id
+            file = await bot.get_file(file_id)
+            file_path = file.file_path
+
+            msg = await message.reply("Загрузка...")
+            try:
+                await bot.download_file(file_path, f"{name}.ogg")
+                to_mp3(f"{name}.ogg")
+                await main_speech_func(message, name, msg)
+                os.remove(f"{name}.ogg")
+                os.remove(f"{name}.mp3")
+
+                if name in aval_guests:
+                    Guest.update(made_speech=True).where(
+                        Guest.user_id == message.from_user.id).execute()
+            except FileExistsError:
+                await message.reply(
+                    "Вы не можете отправить новый запрос, пока не закончите предыдущий!"
+                )
 
     else:
         kb = [
