@@ -10,7 +10,7 @@ from pathlib import Path
 from db import Guest, UserAuth
 from threads import ThreadWithReturnValue
 from aiogram.utils.keyboard import InlineKeyboardBuilder
- 
+
 
 MY_CHAT_ID = 387435447
 
@@ -36,11 +36,27 @@ async def handle_file(file: types.File, file_name: str, path: str):
     )
 
 
+@dp.callback_query(F.data == 'menu')
+async def menu(callback: types.CallbackQuery):
+    keyboard = InlineKeyboardBuilder()
+    keyboard.add(types.InlineKeyboardButton(
+        text='Проверить премиум', callback_data='checkpremium'),
+        types.InlineKeyboardButton(
+            text='Получить премиум', callback_data='getpremium'
+    ),
+        types.InlineKeyboardButton(
+            text="Попробовать", callback_data='try'),
+        types.InlineKeyboardButton(
+            text="В админку", callback_data='admin')
+    )
+    await callback.message.edit_reply_markup(reply_markup=keyboard.adjust(1).as_markup())
+
+
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     user_id = message.from_user.id
     username = message.from_user.username
-    if user_id == MY_CHAT_ID:
+    if user_id != MY_CHAT_ID:
 
         keyboard = InlineKeyboardBuilder()
         keyboard.add(types.InlineKeyboardButton(
@@ -61,6 +77,9 @@ async def cmd_start(message: types.Message):
                 text='Получить премиум', callback_data='getpremium'),
             types.InlineKeyboardButton(
                 text="Попробовать", callback_data='try'),
+            types.InlineKeyboardButton(
+                text="В меню", callback_data='menu'
+            )
         ]
         keyboard = InlineKeyboardBuilder()
         keyboard.add(*kb)
@@ -88,11 +107,11 @@ async def cmd_try(callback: types.CallbackQuery):
                                       'Больше коспектов доступно с премиум подпиской.',
                                       reply_markup=keyboard.adjust(1).as_markup())
     elif Guest.select().where(Guest.user_id == user_id, Guest.made_speech == False).exists():
-        await callback.answer('Отправляй свое голосовое')
+        await callback.message.answer('Отправляй свое голосовое', show_alert=True)
     else:
         Guest.create(user_id=user_id, made_speech=False,
                      username=callback.from_user.username)
-        await callback.answer('Отправляй свое голосовое')
+        await callback.message.answer('Отправляй свое голосовое', show_alert=True)
 
 
 async def main_speech_func(message, name, msg):
@@ -161,7 +180,7 @@ async def premium_requests(username, user_id):
         types.InlineKeyboardButton(
             text=f"Выдать премиум {username}", callback_data=f'give_premium'),
         types.InlineKeyboardButton(
-            text="В меню", callback_data='start')  # TODO: add to menu
+            text="В меню", callback_data='menu')  # TODO: add to menu
     ]
     keyboard = InlineKeyboardBuilder()
 
@@ -183,7 +202,7 @@ async def get_premium(callback: types.CallbackQuery):
 
 
 @dp.callback_query(F.data == 'admin')
-async def admin(callback= types.CallbackQuery):
+async def admin(callback=types.CallbackQuery):
     user_id = callback.from_user.id
     if user_id == MY_CHAT_ID:
         kb = [
@@ -225,8 +244,10 @@ async def give_premium(callback: types.CallbackQuery):
 
 async def del_premium_request(username, user_id):
     kb = [
-        types.InlineKeyboardButton(text='Забрать премиум', callback_data='del_premium'),
+        types.InlineKeyboardButton(
+            text='Забрать премиум', callback_data='del_premium'),
         types.InlineKeyboardButton(text="В админку", callback_data='admin'),
+        types.InlineKeyboardButton(text="В меню", callback_data='menu')
     ]
     keyboard = InlineKeyboardBuilder()
 
