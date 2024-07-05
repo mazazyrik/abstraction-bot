@@ -52,11 +52,20 @@ async def menu(callback: types.CallbackQuery):
     await callback.message.edit_reply_markup(reply_markup=keyboard.adjust(1).as_markup())
 
 
+@dp.callback_query(F.data == 'checkpremium')
+async def checkpremium(callback: types.CallbackQuery):
+    user_id = callback.from_user.id
+    if UserAuth.select().where(UserAuth.user_id == user_id).exists():
+        await callback.message.answer('Уже есть премиум аккаунт!')
+    else:
+        await callback.message.answer('У вас нет премиум аккаунта!')
+
+
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     user_id = message.from_user.id
     username = message.from_user.username
-    if user_id != MY_CHAT_ID:
+    if user_id == MY_CHAT_ID:
 
         keyboard = InlineKeyboardBuilder()
         keyboard.add(types.InlineKeyboardButton(
@@ -85,10 +94,7 @@ async def cmd_start(message: types.Message):
         keyboard.add(*kb)
         await message.answer(
             f'Привет, {username}! Что бы получить полный доступ - купи премиум. '
-            f'1 неделя = 200 рублей, 1 месяц = 600 рублей.'
-            f'Переводи через СБП на Тинькофф по номеру 89771416389'
-            f' с коментарием "Премиум" '
-            f'Также, ты можешь сделать пробную расшифровку.',
+            f'Также можешь попробовать использовать голосовое сообщение, если ты еще не пробовал!',
             reply_markup=keyboard.adjust(2).as_markup()
         )
 
@@ -166,12 +172,15 @@ async def voice_message_handler(message: types.Message):
 
     else:
         kb = [
-            [types.KeyboardButton(text='/getpremium')],
+            types.InlineKeyboardButton(
+                text='Получить премиум', callback_data='getpremium'),
         ]
-        keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
+        keyboard = InlineKeyboardBuilder
+
+        keyboard.add(*kb)
         await message.answer(
             'У вас нет премиума! Что бы получить премиум, нажми /getpremium',
-            reply_markup=keyboard
+            reply_markup=keyboard.adjust(1).as_markup()
         )
 
 
@@ -180,7 +189,7 @@ async def premium_requests(username, user_id):
         types.InlineKeyboardButton(
             text=f"Выдать премиум {username}", callback_data=f'give_premium'),
         types.InlineKeyboardButton(
-            text="В меню", callback_data='menu')  # TODO: add to menu
+            text="В меню", callback_data='menu')
     ]
     keyboard = InlineKeyboardBuilder()
 
@@ -196,7 +205,14 @@ async def get_premium(callback: types.CallbackQuery):
     username = callback.from_user.username
     user_id = callback.from_user.id
 
-    await callback.message.answer('Ваши данные переданы админу!')
+    await callback.message.answer(
+        'Чтобы получить полный доступ - купи премиум. '
+        '1 месяц = 600 рублей. '
+        'Переводи через СБП на Тинькофф по номеру 89771416389 с коментарием'
+        ' "Премиум".'
+        ' Либо по ссылке '
+        'https://www.tinkoff.ru/rm/chuvaev.nikita7/6cJIt194'
+    )
 
     await premium_requests(username, user_id)
 
@@ -238,7 +254,15 @@ async def give_premium(callback: types.CallbackQuery):
             premium=True,
             user_id=int(user_id)
         )
-        await callback.message.answer('Премиум выдан!')
+
+        kb = [
+            types.InlineKeyboardButton(
+                text="В меню", callback_data='menu')
+        ]
+        keyboard = InlineKeyboardBuilder()
+
+        keyboard.add(*kb)
+        await callback.message.answer('Премиум выдан!', reply_markup=keyboard.adjust(1).as_markup())
         await bot.send_message(int(user_id), 'Вы получили премиум!')
 
 
@@ -276,7 +300,14 @@ async def del_premium(callback: types.CallbackQuery):
             UserAuth.user_id == int(user_id),
             UserAuth.username == username
         ).execute()
-        await callback.message.answer('Премиум удален!')
+        kb = [
+            types.InlineKeyboardButton(
+                text="В меню", callback_data='menu')
+        ]
+        keyboard = InlineKeyboardBuilder()
+
+        keyboard.add(*kb)
+        await callback.message.answer('Премиум удален!', reply_markup=keyboard.adjust(1).as_markup())
         await bot.send_message(int(user_id), 'У вас больше нет премиума!')
 
 
