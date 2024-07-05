@@ -40,7 +40,7 @@ async def handle_file(file: types.File, file_name: str, path: str):
 async def cmd_start(message: types.Message):
     user_id = message.from_user.id
     username = message.from_user.username
-    if user_id != MY_CHAT_ID:  # тест
+    if user_id == MY_CHAT_ID:
 
         keyboard = InlineKeyboardBuilder()
         keyboard.add(types.InlineKeyboardButton(
@@ -167,7 +167,7 @@ async def premium_requests(username, user_id):
 
     keyboard.add(*kb)
     await bot.send_message(
-        MY_CHAT_ID, f'Пользователь {username} запросил премиум!',
+        MY_CHAT_ID, f'Пользователь {username}, запросил премиум! {user_id}',
         reply_markup=keyboard.adjust(1).as_markup()
     )
 
@@ -182,31 +182,31 @@ async def get_premium(callback: types.CallbackQuery):
     await premium_requests(username, user_id)
 
 
-@dp.message(Command("admin"))
-async def admin(message: types.Message):
-    user_id = message.from_user.id
+@dp.callback_query(F.data == 'admin')
+async def admin(callback= types.CallbackQuery):
+    user_id = callback.from_user.id
     if user_id == MY_CHAT_ID:
         kb = [
             types.InlineKeyboardButton(
-                text="/getpremiums", callback_data='getpremiums'),
+                text="Список премиум пользователей", callback_data='getpremiums'),
 
         ]
         keyboard = InlineKeyboardBuilder()
 
         keyboard.add(*kb)
-        await message.answer(
+        await callback.message.answer(
             'Привет, админ! Вот тебе твои возможности', reply_markup=keyboard.adjust(2).as_markup()
         )
     else:
-        await message.answer("Ты не админ")
+        await callback.answer("Ты не админ")
 
 
 @dp.callback_query(F.data == 'give_premium')
 async def give_premium(callback: types.CallbackQuery):
-    print(callback)
-    args = callback.message.text[12:]
-    user_id = args.split(",")[0]
-    username = (args.split(",")[1])[1:]
+    args = callback.message.text.replace('Пользователь ', '')
+    args = args.replace(' запросил премиум!', '')
+    username = args.split(', ')[0]
+    user_id = int(args.split(', ')[1])
     user = UserAuth.get_or_none(
         UserAuth.user_id == int(user_id),
         UserAuth.username == username)
@@ -225,21 +225,25 @@ async def give_premium(callback: types.CallbackQuery):
 
 async def del_premium_request(username, user_id):
     kb = [
-        # [types.KeyboardButton(text=f"Забрать премиум ")],
-        [types.KeyboardButton(text="В админку", callback_data='admin')],
+        types.InlineKeyboardButton(text='Забрать премиум', callback_data='del_premium'),
+        types.InlineKeyboardButton(text="В админку", callback_data='admin'),
     ]
-    keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
+    keyboard = InlineKeyboardBuilder()
+
+    keyboard.add(*kb)
     await bot.send_message(
-        MY_CHAT_ID, f'Забрать премиум у пользователя {username}?',
-        reply_markup=keyboard
+        MY_CHAT_ID, f'Забрать премиум у пользователя {username}, {user_id}??',
+        reply_markup=keyboard.adjust(1).as_markup()
     )
 
 
-@dp.callback_query(F.text.startswith('del_premium'))
+@dp.callback_query(F.data == 'del_premium')
 async def del_premium(callback: types.CallbackQuery):
 
-    user_id = callback.from_user.id
-    username = callback.from_user.username
+    args = callback.message.text.replace('Забрать премиум у пользователя ', '')
+    args = args.replace('?', '')
+    username = args.split(', ')[0]
+    user_id = int(args.split(', ')[1])
     user = UserAuth.get_or_none(
         UserAuth.user_id == int(user_id),
         UserAuth.username == username)
@@ -259,11 +263,9 @@ async def del_premium(callback: types.CallbackQuery):
 async def get_premiums(callback: types.CallbackQuery):
     premium_users = UserAuth.select().where(UserAuth.premium == True)
     if list(premium_users) == []:
-        await callback.edit_text('Никто не имеет премиума!')
+        await callback.message.answer('Никто не имеет премиума!')
     for user in premium_users:
-        await callback.answer(f'{user.username} - {user.user_id}')
         await del_premium_request(user.username, int(user.user_id))
-        await asyncio.sleep(5)
 
 
 async def main():
