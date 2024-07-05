@@ -4,12 +4,13 @@ import asyncio
 from main_speech import main as speech_main
 import os
 from ogg_to_mp3 import to_mp3
-from aiogram import Bot, Dispatcher, types
-from aiogram import F
+from aiogram import Bot, Dispatcher, types, F, Router
 from aiogram.filters.command import Command
 from pathlib import Path
 from db import Guest, UserAuth
 from threads import ThreadWithReturnValue
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+ 
 
 MY_CHAT_ID = 387435447
 
@@ -39,16 +40,16 @@ async def handle_file(file: types.File, file_name: str, path: str):
 async def cmd_start(message: types.Message):
     user_id = message.from_user.id
     username = message.from_user.username
-    if user_id == MY_CHAT_ID:
-        kb = [
-            [types.KeyboardButton(text='/admin')],
-        ]
-        keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
+    if user_id != MY_CHAT_ID:  # тест
+
+        keyboard = InlineKeyboardBuilder()
+        keyboard.add(types.InlineKeyboardButton(
+            text='Админка', callback_data='admin'))
 
         await message.answer(
             'Здарова, никитос! пришли'
             ' мне голосовое сообщение или войди в админку',
-            reply_markup=keyboard
+            reply_markup=keyboard.adjust(2).as_markup()
         )
     elif UserAuth.select().where(UserAuth.user_id == user_id).exists():
         await message.answer(
@@ -56,38 +57,42 @@ async def cmd_start(message: types.Message):
         )
     else:
         kb = [
-            [types.KeyboardButton(text='/getpremium')],
-            [types.KeyboardButton(text="/try")]
+            types.InlineKeyboardButton(
+                text='Получить премиум', callback_data='getpremium'),
+            types.InlineKeyboardButton(
+                text="Попробовать", callback_data='try'),
         ]
-        keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
+        keyboard = InlineKeyboardBuilder()
+        keyboard.add(*kb)
         await message.answer(
-            f'Привет, {username}! Что бы получить премиум, нажми /getpremium. '
+            f'Привет, {username}! Что бы получить полный доступ - купи премиум. '
             f'1 неделя = 200 рублей, 1 месяц = 600 рублей.'
             f'Переводи через СБП на Тинькофф по номеру 89771416389'
-            f' с коментарием "Премиум"'
-            f'Таже по комманде /try ты можешь сделать пробную расшифровку, ',
-            reply_markup=keyboard
+            f' с коментарием "Премиум" '
+            f'Также, ты можешь сделать пробную расшифровку.',
+            reply_markup=keyboard.adjust(2).as_markup()
         )
 
 
-@dp.message(Command("try"))
-async def cmd_try(message: types.Message):
-    user_id = message.from_user.id
+@dp.callback_query(F.data == 'try')
+async def cmd_try(callback: types.CallbackQuery):
+    user_id = callback.from_user.id
     if Guest.select().where(Guest.user_id == user_id, Guest.made_speech == True).exists():
-        kb = [
-            [types.KeyboardButton(text='/getpremium')]
-        ]
-        keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
-        await message.answer('Ты уже пробовал! '
-                             'Больше коспектов доступно с премиум подпиской.'
-                             'Приобрести премиум можно по команде /getpremium',
-                             reply_markup=keyboard)
+
+        button = types.InlineKeyboardButton(
+            text='Получить премиум', callback_data='getpremium')
+        keyboard = InlineKeyboardBuilder()
+        keyboard.add(button)
+
+        await callback.message.answer('Ты уже пробовал! '
+                                      'Больше коспектов доступно с премиум подпиской.',
+                                      reply_markup=keyboard.adjust(1).as_markup())
     elif Guest.select().where(Guest.user_id == user_id, Guest.made_speech == False).exists():
-        await message.answer('Отправляй свое голосовое')
+        await callback.answer('Отправляй свое голосовое')
     else:
         Guest.create(user_id=user_id, made_speech=False,
-                     username=message.from_user.username)
-        await message.answer('Отправляй свое голосовое')
+                     username=callback.from_user.username)
+        await callback.answer('Отправляй свое голосовое')
 
 
 async def main_speech_func(message, name, msg):
@@ -153,22 +158,26 @@ async def voice_message_handler(message: types.Message):
 
 async def premium_requests(username, user_id):
     kb = [
-        [types.KeyboardButton(text=f"Выдать премиум {user_id}, {username}")],
-        [types.KeyboardButton(text="/start")]
+        types.InlineKeyboardButton(
+            text=f"Выдать премиум {username}", callback_data=f'give_premium'),
+        types.InlineKeyboardButton(
+            text="В меню", callback_data='start')  # TODO: add to menu
     ]
-    keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
+    keyboard = InlineKeyboardBuilder()
+
+    keyboard.add(*kb)
     await bot.send_message(
         MY_CHAT_ID, f'Пользователь {username} запросил премиум!',
-        reply_markup=keyboard
+        reply_markup=keyboard.adjust(1).as_markup()
     )
 
 
-@dp.message(Command('getpremium'))
-async def get_premium(message: types.Message):
-    username = message.from_user.username
-    user_id = message.from_user.id
+@dp.callback_query(F.data == 'getpremium')
+async def get_premium(callback: types.CallbackQuery):
+    username = callback.from_user.username
+    user_id = callback.from_user.id
 
-    await message.answer('Ваши данные переданы админу!')
+    await callback.message.answer('Ваши данные переданы админу!')
 
     await premium_requests(username, user_id)
 
@@ -178,21 +187,24 @@ async def admin(message: types.Message):
     user_id = message.from_user.id
     if user_id == MY_CHAT_ID:
         kb = [
-            [types.KeyboardButton(text="/getpremiums")],
-            [types.KeyboardButton(text="/getpremium")],
+            types.InlineKeyboardButton(
+                text="/getpremiums", callback_data='getpremiums'),
 
         ]
-        keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
+        keyboard = InlineKeyboardBuilder()
+
+        keyboard.add(*kb)
         await message.answer(
-            'Привет, админ! Вот тебе твои возможности', reply_markup=keyboard
+            'Привет, админ! Вот тебе твои возможности', reply_markup=keyboard.adjust(2).as_markup()
         )
     else:
         await message.answer("Ты не админ")
 
 
-@dp.message(F.text.startswith("Выдать премиум"))
-async def give_premium(message: types.Message):
-    args = message.text[14:]
+@dp.callback_query(F.data == 'give_premium')
+async def give_premium(callback: types.CallbackQuery):
+    print(callback)
+    args = callback.message.text[12:]
     user_id = args.split(",")[0]
     username = (args.split(",")[1])[1:]
     user = UserAuth.get_or_none(
@@ -200,21 +212,21 @@ async def give_premium(message: types.Message):
         UserAuth.username == username)
 
     if user is not None:
-        await message.answer('Такой пользователь уже есть!')
+        await callback.message.answer('Такой пользователь уже есть!', show_alert=True)
     else:
         UserAuth.create(
             username=username,
             premium=True,
             user_id=int(user_id)
         )
-        await message.answer('Премиум выдан!')
+        await callback.message.answer('Премиум выдан!')
         await bot.send_message(int(user_id), 'Вы получили премиум!')
 
 
 async def del_premium_request(username, user_id):
     kb = [
-        [types.KeyboardButton(text=f"Забрать премиум {user_id}, {username}")],
-        [types.KeyboardButton(text="/admin")]
+        # [types.KeyboardButton(text=f"Забрать премиум ")],
+        [types.KeyboardButton(text="В админку", callback_data='admin')],
     ]
     keyboard = types.ReplyKeyboardMarkup(keyboard=kb)
     await bot.send_message(
@@ -223,34 +235,33 @@ async def del_premium_request(username, user_id):
     )
 
 
-@dp.message(F.text.startswith("Забрать премиум"))
-async def del_premium(message: types.Message):
+@dp.callback_query(F.text.startswith('del_premium'))
+async def del_premium(callback: types.CallbackQuery):
 
-    args = message.text[16:]
-    user_id = args.split(",")[0]
-    username = (args.split(",")[1])[1:]
+    user_id = callback.from_user.id
+    username = callback.from_user.username
     user = UserAuth.get_or_none(
         UserAuth.user_id == int(user_id),
         UserAuth.username == username)
 
     if user is None:
-        await message.answer('Такого пользователя нет!')
+        await callback.message.answer('Такого пользователя нет!')
     else:
         UserAuth.delete().where(
             UserAuth.user_id == int(user_id),
             UserAuth.username == username
         ).execute()
-        await message.answer('Премиум удален!')
+        await callback.message.answer('Премиум удален!')
         await bot.send_message(int(user_id), 'У вас больше нет премиума!')
 
 
-@dp.message(Command('getpremiums'))
-async def get_premiums(message: types.Message):
+@dp.callback_query(F.data == 'getpremiums')
+async def get_premiums(callback: types.CallbackQuery):
     premium_users = UserAuth.select().where(UserAuth.premium == True)
     if list(premium_users) == []:
-        await message.answer('Никто не имеет премиума!')
+        await callback.edit_text('Никто не имеет премиума!')
     for user in premium_users:
-        await message.answer(f'{user.username} - {user.user_id}')
+        await callback.answer(f'{user.username} - {user.user_id}')
         await del_premium_request(user.username, int(user.user_id))
         await asyncio.sleep(5)
 
