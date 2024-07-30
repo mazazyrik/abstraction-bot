@@ -1,7 +1,7 @@
 import datetime
 from peewee import (
     PostgresqlDatabase, Model, CharField, BooleanField,
-    DateTimeField, IntegerField
+    DateTimeField, BigIntegerField
 )
 
 db = PostgresqlDatabase('postgres', user='postgres', password='1234',
@@ -10,7 +10,7 @@ db = PostgresqlDatabase('postgres', user='postgres', password='1234',
 
 class Guest(Model):
     username = CharField()
-    user_id = IntegerField()
+    user_id = BigIntegerField()
     made_speech = BooleanField(default=False)
 
     class Meta:
@@ -25,14 +25,14 @@ class Guest(Model):
         expired_users = Guest.select().where(
             Guest.expiry_date < datetime.datetime.now())
         for user in expired_users:
-            user.delete_instance()
+            user.made_speech = False
 
 
 class UserAuth(Model):
     username = CharField()
     premium = BooleanField(default=False)
     is_admin = BooleanField(default=False)
-    user_id = IntegerField()
+    user_id = BigIntegerField()
     expiry_date = DateTimeField(null=True)
 
     class Meta:
@@ -50,7 +50,7 @@ class UserAuth(Model):
         expired_users = UserAuth.select().where(
             UserAuth.expiry_date < datetime.datetime.now())
         for user in expired_users:
-            user.delete_instance()
+            user.premium = False
 
 
 db.create_tables([UserAuth, Guest])
