@@ -162,3 +162,5 @@ cython_debug/
 models/
 
 *.mp3
+.identity.txt
+test_text.txt
