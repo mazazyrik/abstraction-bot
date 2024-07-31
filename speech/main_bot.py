@@ -175,7 +175,7 @@ async def voice_message_handler(message: types.Message):
             types.InlineKeyboardButton(
                 text='Получить премиум', callback_data='getpremium'),
         ]
-        keyboard = InlineKeyboardBuilder
+        keyboard = InlineKeyboardBuilder()
 
         keyboard.add(*kb)
         await message.answer(

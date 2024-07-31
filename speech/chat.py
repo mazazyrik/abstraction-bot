@@ -61,7 +61,10 @@ async def add_prompt(text):
     result = response.text
     result_json = json.loads(result)
 
-    return result_json.get('result').get('alternatives')[0].get('message').get('text')
+    return (
+        result_json.get('result').get('alternatives')[
+            0].get('message').get('text')
+    )
 
 
 # f = open('test_text.txt', 'r')
