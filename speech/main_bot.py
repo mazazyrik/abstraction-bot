@@ -130,16 +130,24 @@ async def text_msg(message: types.Message, state: FSMContext):
         keyboard.add(button)
 
         await message.answer('Ты уже пробовал! '
-                                      'Больше коспектов доступно с премиум подпиской.',
-                                      reply_markup=keyboard.adjust(1).as_markup())
+                             'Больше коспектов доступно с премиум подпиской.',
+                             reply_markup=keyboard.adjust(1).as_markup())
     elif Guest.select().where(Guest.user_id == user_id, Guest.made_speech == False).exists():
+        button = types.InlineKeyboardButton(
+            text='В меню', callback_data='menu')
+        keyboard = InlineKeyboardBuilder()
+        keyboard.add(button)
         ans = await add_prompt(message_text)
-        await message.answer(ans)
+        await message.answer(ans, reply_markup=keyboard.adjust(1).as_markup())
     else:
         Guest.create(user_id=user_id, made_speech=False,
                      username=message.from_user .username)
+        button = types.InlineKeyboardButton(
+            text='В меню', callback_data='menu')
+        keyboard = InlineKeyboardBuilder()
+        keyboard.add(button)
         ans = await add_prompt(message_text)
-        await message.answer(ans)
+        await message.answer(ans, reply_markup=keyboard.adjust(1).as_markup())
 
 
 @dp.callback_query(F.data == 'try')
@@ -165,8 +173,11 @@ async def cmd_try(callback: types.CallbackQuery):
 
 async def main_speech_func(message, name, msg):
     ans = await speech_main(f"{name}.mp3")
-
-    await message.answer(ans)
+    button = types.InlineKeyboardButton(
+        text='В меню', callback_data='menu')
+    keyboard = InlineKeyboardBuilder()
+    keyboard.add(button)
+    await message.answer(ans, reply_markup=keyboard.adjust(1).as_markup())
     await bot.delete_message(message.chat.id, msg.message_id)
 
 

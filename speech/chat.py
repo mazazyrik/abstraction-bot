@@ -69,6 +69,7 @@ async def add_prompt(text):
         'message'
     ).get(
         'text'
+    )
 
 
 
