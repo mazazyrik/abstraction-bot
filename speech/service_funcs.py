@@ -2,35 +2,13 @@
 import os
 from ogg_to_mp3 import to_mp3
 
-from aiogram import types, F
+from aiogram import types
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from aiogram.filters import Command
-from main_bot import dp, MY_CHAT_ID, bot
 from db import UserAuth, Guest
 from utils import main_speech_func
+from constants import MY_CHAT_ID, bot
 
 
-@dp.callback_query(F.data == 'menu')
-async def menu(callback: types.CallbackQuery):
-    keyboard = InlineKeyboardBuilder()
-    keyboard.add(types.InlineKeyboardButton(
-        text='Проверить премиум', callback_data='checkpremium'),
-        types.InlineKeyboardButton(
-            text='Получить премиум', callback_data='getpremium'
-    ),
-        types.InlineKeyboardButton(
-            text="Попробовать", callback_data='try'),
-        types.InlineKeyboardButton(
-            text="В админку", callback_data='admin'),
-        types.InlineKeyboardButton(
-            text='Написать конспект текста', callback_data='text')
-    )
-    await callback.message.edit_reply_markup(
-        reply_markup=keyboard.adjust(1).as_markup()
-    )
-
-
-@dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     user_id = message.from_user.id
     username = message.from_user.username
@@ -74,7 +52,25 @@ async def cmd_start(message: types.Message):
         )
 
 
-@dp.callback_query(F.data == 'try')
+async def menu(callback: types.CallbackQuery):
+    keyboard = InlineKeyboardBuilder()
+    keyboard.add(types.InlineKeyboardButton(
+        text='Проверить премиум', callback_data='checkpremium'),
+        types.InlineKeyboardButton(
+            text='Получить премиум', callback_data='getpremium'
+    ),
+        types.InlineKeyboardButton(
+            text="Попробовать", callback_data='try'),
+        types.InlineKeyboardButton(
+            text="В админку", callback_data='admin'),
+        types.InlineKeyboardButton(
+            text='Написать конспект текста', callback_data='text')
+    )
+    await callback.message.edit_reply_markup(
+        reply_markup=keyboard.adjust(1).as_markup()
+    )
+
+
 async def cmd_try(callback: types.CallbackQuery):
     user_id = callback.from_user.id
     if Guest.select().where(
@@ -107,7 +103,6 @@ async def cmd_try(callback: types.CallbackQuery):
         )
 
 
-@dp.message(F.content_type.in_({'audio', 'voice'}))
 async def voice_message_handler(message: types.Message):
     name = message.from_user.username
     premium_users = [user.username for user in UserAuth.select().where(
@@ -166,7 +161,6 @@ async def voice_message_handler(message: types.Message):
         )
 
 
-@dp.callback_query(F.data == 'admin')
 async def admin(callback=types.CallbackQuery):
     user_id = callback.from_user.id
     if user_id == MY_CHAT_ID:
@@ -174,6 +168,9 @@ async def admin(callback=types.CallbackQuery):
             types.InlineKeyboardButton(
                 text="Список премиум пользователей",
                 callback_data='getpremiums'),
+            types.InlineKeyboardButton(
+                text='Меню', callback_data='menu'
+            )
 
         ]
         keyboard = InlineKeyboardBuilder()
@@ -187,7 +184,6 @@ async def admin(callback=types.CallbackQuery):
         await callback.answer("Ты не админ")
 
 
-@dp.callback_query(F.data == 'give_premium')
 async def give_premium(callback: types.CallbackQuery):
     args = callback.message.text.replace('Пользователь ', '')
     args = args.replace(' запросил премиум!', '')
@@ -221,7 +217,6 @@ async def give_premium(callback: types.CallbackQuery):
         await bot.send_message(int(user_id), 'Вы получили премиум!')
 
 
-@dp.callback_query(F.data == 'del_premium')
 async def del_premium(callback: types.CallbackQuery):
 
     args = callback.message.text.replace('Забрать премиум у пользователя ', '')

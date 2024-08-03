@@ -1,15 +1,11 @@
-from threads import ThreadWithReturnValue
-from aiogram.fsm.state import State, StatesGroup
 from pathlib import Path
+
 from aiogram import types
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from main_speech import main as speech_main
-from main_bot import bot, MY_CHAT_ID
-
-
-class Text(StatesGroup):
-    text = State()
+from constants import bot, MY_CHAT_ID
+from threads import ThreadWithReturnValue
 
 
 async def transcribe_audio_thread(name: str):
