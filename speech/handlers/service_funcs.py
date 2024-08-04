@@ -12,6 +12,7 @@ from utils import main_speech_func
 
 router = Router()
 
+
 @router.callback_query(F.data == 'menu')
 async def menu(callback: types.CallbackQuery):
     keyboard = InlineKeyboardBuilder()
@@ -25,7 +26,9 @@ async def menu(callback: types.CallbackQuery):
         types.InlineKeyboardButton(
             text="В админку", callback_data='admin'),
         types.InlineKeyboardButton(
-            text='Написать конспект текста', callback_data='text')
+            text='Написать конспект текста', callback_data='text'),
+        types.InlineKeyboardButton(
+            text='Написать конспект текста по файлу', callback_data='text_file'),
     )
     await callback.message.edit_reply_markup(
         reply_markup=keyboard.adjust(1).as_markup()

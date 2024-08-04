@@ -1,11 +1,14 @@
 # flake8: noqa
+import logging
+import os
 from aiogram import types, F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from db import Guest, UserAuth
 from chat import add_prompt
-from utils import Text, premium_requests, del_premium_request
+from utils import Text, premium_requests, del_premium_request, File
+from constants import bot
 
 router = Router()
 
@@ -56,6 +59,46 @@ async def text_msg(message: types.Message, state: FSMContext):
         keyboard.add(button)
         ans = await add_prompt(message_text)
         await message.answer(ans, reply_markup=keyboard.adjust(1).as_markup())
+
+
+@router.callback_query(F.data == 'text_file')
+async def text_file(callback: types.CallbackQuery, state: FSMContext):
+    await state.set_state(File.file)
+    await callback.message.answer('Отправь мне файл для создания коспекта')
+
+
+@router.message(File.file, F.content_type.in_({'document'}))
+async def text_file_msg(message: types.Message, state: FSMContext):
+    await state.clear()
+    name = message.from_user.username
+    if message.document is not None:
+        file_id = message.document.file_id
+        file = await bot.get_file(file_id)
+        file_path = file.file_path
+        try:
+            await bot.download_file(file_path, f"{name}.txt")
+            msg = await message.reply("Загрузка...")
+            f = open(f'{name}.txt', 'r')
+            text = f.read()
+            button = types.InlineKeyboardButton(
+                text='В меню', callback_data='menu')
+            keyboard = InlineKeyboardBuilder()
+            keyboard.add(button)
+            final_text = await add_prompt(text)
+            await bot.delete_message(message.chat.id, msg.message_id)
+            ff = open(f'{name}_final.txt', 'w')
+            ff.write(final_text)
+            file = types.FSInputFile(f'{name}_final.txt')
+            await bot.send_document(
+                message.chat.id, file, reply_markup=keyboard.adjust(1).as_markup()
+            ) 
+            os.remove(f"{name}.txt")
+            os.remove(f"{name}_final.txt")
+        except FileExistsError:
+            await message.reply(
+                "Вы не можете отправить новый запрос, "
+                "пока не закончите предыдущий!"
+            )
 
 
 @router.callback_query(F.data == 'getpremium')
