@@ -7,7 +7,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.filters import Command
 from constants import MY_CHAT_ID, bot
 from db import UserAuth, Guest
-from utils import main_speech_func
+from util_tools.utils import main_speech_func
 
 
 router = Router()
@@ -24,16 +24,17 @@ async def menu(callback: types.CallbackQuery):
         types.InlineKeyboardButton(
             text="Попробовать", callback_data='try'),
         types.InlineKeyboardButton(
-            text="В админку", callback_data='admin'),
-        types.InlineKeyboardButton(
             text='Написать конспект текста', callback_data='text'),
         types.InlineKeyboardButton(
             text='Написать конспект текста по файлу', callback_data='text_file'),
+        types.InlineKeyboardButton(
+            text="В админку", callback_data='admin'),
+        types.InlineKeyboardButton(
+            text='Обратная связь', callback_data='feedback')
     )
     await callback.message.edit_reply_markup(
         reply_markup=keyboard.adjust(1).as_markup()
     )
-
 
 @router.message(Command("start"))
 async def cmd_start(message: types.Message):
@@ -43,46 +44,74 @@ async def cmd_start(message: types.Message):
 
         keyboard = InlineKeyboardBuilder()
         keyboard.add(types.InlineKeyboardButton(
-            text='Админка', callback_data='admin'))
+            text='Админка', callback_data='admin'),
+            types.InlineKeyboardButton(
+            text="В меню", callback_data='menu')
+        )
 
         await message.answer(
             'Здарова, никитос! пришли'
             ' мне голосовое сообщение или войди в админку',
-            reply_markup=keyboard.adjust(2).as_markup()
+            reply_markup=keyboard.adjust(1).as_markup()
         )
     elif UserAuth.select().where(UserAuth.user_id == user_id).exists():
+        keyboard = InlineKeyboardBuilder()
+        keyboard.add(types.InlineKeyboardButton(
+            text="В меню", callback_data='menu'
+        ))
         await message.answer(
-            'Уже есть премиум аккаунт! Вы крутой, скидывайте свое гс'
+            f'Привет, {username}!\N{raised hand} Я смотрю '
+            f'ты уже смершарик, \N{smiling face with sunglasses}'
+            f' так что вот тебе меню!\n'
+            f'\nДля конспекта из аудио отправь голосовое '
+            f'сообщение или файл с расширением .mp3\n',
+            reply_markup=keyboard.adjust(1).as_markup()
         )
+
     else:
         kb = [
             types.InlineKeyboardButton(
                 text='Получить премиум', callback_data='getpremium'),
-            types.InlineKeyboardButton(
-                text="Попробовать", callback_data='try'),
+
             types.InlineKeyboardButton(
                 text="В меню", callback_data='menu'
             ),
-            types.InlineKeyboardButton(
-                text='Написать конспект текста', callback_data='text'
-            )
+
 
         ]
         keyboard = InlineKeyboardBuilder()
         keyboard.add(*kb)
         await message.answer(
-            f'Привет, {username}! Чтобы получить '
-            f'полный доступ - купи премиум. '
-            f'Также можешь попробовать использовать голосовое сообщение, '
-            f'если ты еще не пробовал!',
-            reply_markup=keyboard.adjust(2).as_markup()
+            f'Привет, {username}! \N{raised hand} \n'
+            f'Добро пожаловать в бота Abstraction\N{TRADE MARK SIGN}.\n'
+            f'\nПрошу тебя ознакомиться '
+            f'с возможностями бота и перейти в меню. \N{TRIANGULAR FLAG ON POST}\n'
+            f'\nБот умеет:\n'
+            f'\N{DIGIT ONE}. '
+            f' Делать коспекты из голосовых сообщений или мп3 файлом до 20 мб\n'
+            f'\N{DIGIT TWO}. '
+            f' Писать конспекты из сообщений до 4096 символов\n'
+            f'\N{DIGIT THREE}. '
+            f' Писать конспекты из txt файлов\n'
+            f'\N{DIGIT FOUR}. '
+            f' Без преимума 1 коспект бесплатно\n'
+            f'\N{DIGIT FIVE}. '
+            f' С премиумом безлимитное количетво коспектов в месяц\n'
+            f'\nДля конспекта из аудио отправь голосовое '
+            f'сообщение или файл с расширением .mp3\n'
+            f'\nТакже, если ты нашел баг или хочешь предложить новую фишку - напиши @mazwork1'
+            f'\N{smiling face with sunglasses}',
+            reply_markup=keyboard.adjust(1).as_markup()
         )
 
 
 @router.callback_query(F.data == 'try')
 async def cmd_try(callback: types.CallbackQuery):
     user_id = callback.from_user.id
-    if Guest.select().where(
+    if UserAuth.select().where(
+            UserAuth.premium == True, UserAuth.user_id == user_id).exists():
+        await callback.message.answer('Уже есть премиум аккаунт!')
+    elif Guest.select().where(
         Guest.user_id == user_id, Guest.made_speech == True
     ).exists():
 
@@ -223,7 +252,10 @@ async def give_premium(callback: types.CallbackQuery):
                                       reply_markup=(
                                           keyboard.adjust(1).as_markup()
                                       ))
-        await bot.send_message(int(user_id), 'Вы получили премиум!')
+        await bot.send_message(
+            int(user_id), 'Вы получили премиум!',
+            reply_markup=keyboard.adjust(1).as_markup()
+        )
 
 
 @router.callback_query(F.data == 'del_premium')
@@ -255,4 +287,7 @@ async def del_premium(callback: types.CallbackQuery):
                                       reply_markup=(
                                           keyboard.adjust(1).as_markup()
                                       ))
-        await bot.send_message(int(user_id), 'У вас больше нет премиума!')
+        await bot.send_message(int(user_id), 'У вас больше нет премиума!',
+                               reply_markup=(
+            keyboard.adjust(1).as_markup()
+        ))

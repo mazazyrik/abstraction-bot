@@ -16,6 +16,10 @@ class File(StatesGroup):
     file = State()
 
 
+class Feedback(StatesGroup):
+    feedback = State()
+
+
 async def transcribe_audio_thread(name: str):
     thread = ThreadWithReturnValue(
         target=speech_main, args=(name,))
