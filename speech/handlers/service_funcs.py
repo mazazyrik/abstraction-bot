@@ -2,15 +2,17 @@
 import os
 from ogg_to_mp3 import to_mp3
 
-from aiogram import types, F
+from aiogram import types, F, Router
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.filters import Command
-from main_bot import dp, MY_CHAT_ID, bot
+from constants import MY_CHAT_ID, bot
 from db import UserAuth, Guest
 from utils import main_speech_func
 
 
-@dp.callback_query(F.data == 'menu')
+router = Router()
+
+@router.callback_query(F.data == 'menu')
 async def menu(callback: types.CallbackQuery):
     keyboard = InlineKeyboardBuilder()
     keyboard.add(types.InlineKeyboardButton(
@@ -30,7 +32,7 @@ async def menu(callback: types.CallbackQuery):
     )
 
 
-@dp.message(Command("start"))
+@router.message(Command("start"))
 async def cmd_start(message: types.Message):
     user_id = message.from_user.id
     username = message.from_user.username
@@ -74,7 +76,7 @@ async def cmd_start(message: types.Message):
         )
 
 
-@dp.callback_query(F.data == 'try')
+@router.callback_query(F.data == 'try')
 async def cmd_try(callback: types.CallbackQuery):
     user_id = callback.from_user.id
     if Guest.select().where(
@@ -107,7 +109,7 @@ async def cmd_try(callback: types.CallbackQuery):
         )
 
 
-@dp.message(F.content_type.in_({'audio', 'voice'}))
+@router.message(F.content_type.in_({'audio', 'voice'}))
 async def voice_message_handler(message: types.Message):
     name = message.from_user.username
     premium_users = [user.username for user in UserAuth.select().where(
@@ -166,7 +168,7 @@ async def voice_message_handler(message: types.Message):
         )
 
 
-@dp.callback_query(F.data == 'admin')
+@router.callback_query(F.data == 'admin')
 async def admin(callback=types.CallbackQuery):
     user_id = callback.from_user.id
     if user_id == MY_CHAT_ID:
@@ -187,7 +189,7 @@ async def admin(callback=types.CallbackQuery):
         await callback.answer("Ты не админ")
 
 
-@dp.callback_query(F.data == 'give_premium')
+@router.callback_query(F.data == 'give_premium')
 async def give_premium(callback: types.CallbackQuery):
     args = callback.message.text.replace('Пользователь ', '')
     args = args.replace(' запросил премиум!', '')
@@ -221,7 +223,7 @@ async def give_premium(callback: types.CallbackQuery):
         await bot.send_message(int(user_id), 'Вы получили премиум!')
 
 
-@dp.callback_query(F.data == 'del_premium')
+@router.callback_query(F.data == 'del_premium')
 async def del_premium(callback: types.CallbackQuery):
 
     args = callback.message.text.replace('Забрать премиум у пользователя ', '')

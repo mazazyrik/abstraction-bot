@@ -5,7 +5,7 @@ from aiogram import types
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from main_speech import main as speech_main
-from main_bot import bot, MY_CHAT_ID
+from constants import MY_CHAT_ID, bot
 
 
 class Text(StatesGroup):
