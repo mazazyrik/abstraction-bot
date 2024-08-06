@@ -256,12 +256,12 @@ async def give_premium(callback: types.CallbackQuery):
         keyboard = InlineKeyboardBuilder()
 
         keyboard.add(*kb)
-        await callback.message.answer('Премиум выдан!',
+        await callback.message.answer(f'Премиум выдан!\N{green heart}',
                                       reply_markup=(
                                           keyboard.adjust(1).as_markup()
                                       ))
         await bot.send_message(
-            int(user_id), f'Вы получили премиум!',
+            int(user_id), f'Вы получили премиум!\N{green heart}',
             reply_markup=keyboard.adjust(1).as_markup()
         )
 
