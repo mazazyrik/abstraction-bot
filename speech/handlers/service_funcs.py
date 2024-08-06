@@ -106,7 +106,6 @@ async def cmd_start(message: types.Message):
             reply_markup=keyboard.adjust(1).as_markup()
         )
 
-
 @router.callback_query(F.data == 'try')
 async def cmd_try(callback: types.CallbackQuery):
     user_id = callback.from_user.id
@@ -295,7 +294,7 @@ async def del_premium(callback: types.CallbackQuery):
                                       reply_markup=(
                                           keyboard.adjust(1).as_markup()
                                       ))
-        await bot.send_message(int(user_id), 'У вас больше нет премиума!',
+        await bot.send_message(int(user_id), f'У вас больше нет премиума!\N{broken heart}',
                                reply_markup=(
             keyboard.adjust(1).as_markup()
         ))

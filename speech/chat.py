@@ -71,7 +71,3 @@ async def add_prompt(text):
     ).get(
         'text'
     )
-
-
-# f = open('test_text.txt', 'r')
-# print(add_prompt(f.read()))

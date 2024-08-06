@@ -6,10 +6,9 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from db import Guest, UserAuth
 from chat import add_prompt
 from util_tools.utils import (
-    Text, premium_requests, del_premium_request, File, Feedback,
-    Premium, check_premium
+    Text, premium_limit, premium_requests, del_premium_request, File, Feedback,
+    Premium, check_premium, file_prompt, text_util
 )
-from util_tools.file_handler import handle_file
 from constants import MY_CHAT_ID, bot
 
 router = Router()
@@ -20,7 +19,7 @@ async def checkpremium(callback: types.CallbackQuery):
     user_id = callback.from_user.id
     check = check_premium(user_id)
     if check is None:
-        await callback.message.answer('У вас нет премиума!')
+        await callback.message.answer(f'У вас нет премиума!\N{broken heart}')
 
     else:
         await callback.message.answer(f'У вас есть премиум! Осталось: {check} дней.')
@@ -29,7 +28,7 @@ async def checkpremium(callback: types.CallbackQuery):
 @router.callback_query(F.data == 'text')
 async def text(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(Text.text)
-    await callback.message.answer('Напиши текст для создания коспекта')
+    await callback.message.answer('Напиши текст для создания коспекта.')
 
 
 @router.message(Text.text)
@@ -38,49 +37,72 @@ async def text_msg(message: types.Message, state: FSMContext):
     check_premium(user_id)
     await state.clear()
     message_text = message.text
-    if Guest.select().where(Guest.user_id == user_id, Guest.made_speech == True).exists():
+    if (
+        Guest.select().where(
+            Guest.user_id == user_id, Guest.made_speech == True
+        ).exists() or UserAuth.select().where(
+            UserAuth.user_id == user_id, UserAuth.premium == False
+        )
+    ):
+        await premium_limit(message)
 
-        button = types.InlineKeyboardButton(
-            text='Получить премиум', callback_data='getpremium')
-        keyboard = InlineKeyboardBuilder()
-        keyboard.add(button)
-
-        await message.answer('Ты уже пробовал! '
-                             'Больше коспектов доступно с премиум подпиской.',
-                             reply_markup=keyboard.adjust(1).as_markup())
-    elif Guest.select().where(Guest.user_id == user_id, Guest.made_speech == False).exists():
-        button = types.InlineKeyboardButton(
-            text='В меню', callback_data='menu')
-        keyboard = InlineKeyboardBuilder()
-        keyboard.add(button)
-        ans = await add_prompt(message_text)
-        await message.answer(ans, reply_markup=keyboard.adjust(1).as_markup())
+    elif (
+        Guest.select().where(
+            Guest.user_id == user_id, Guest.made_speech == False
+        ).exists()
+    ):
+        text_util(message, message_text)
+        Guest.update(made_speech=True).where(
+            Guest.user_id == message.from_user.id).execute()
+    elif UserAuth.select().where(
+        UserAuth.user_id == user_id, UserAuth.premium == True
+    ):
+        text_util(message, message_text)
     else:
         Guest.create(user_id=user_id, made_speech=False,
-                     username=message.from_user .username)
+                     username=message.from_user.username)
         button = types.InlineKeyboardButton(
             text='В меню', callback_data='menu')
         keyboard = InlineKeyboardBuilder()
         keyboard.add(button)
         ans = await add_prompt(message_text)
         await message.answer(ans, reply_markup=keyboard.adjust(1).as_markup())
+        Guest.update(made_speech=True).where(
+            Guest.user_id == message.from_user.id).execute()
 
 
 @router.callback_query(F.data == 'text_file')
 async def text_file(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(File.file)
-    await callback.message.answer('Отправь мне файл для создания коспекта')
+    await callback.message.answer('Отправь мне файл для создания коспекта.')
 
 
 @router.message(File.file, F.content_type.in_({'document'}))
 async def text_file_msg(message: types.Message, state: FSMContext):
     await state.clear()
+    user_id = message.from_user.id
+    check_premium(user_id)
     name = message.from_user.username
-    if message.document is not None:
-        file_id = message.document.file_id
-        file = await bot.get_file(file_id)
-        file_path = file.file_path
-        await handle_file(file, name, file_path, message)
+    if (
+        Guest.select().where(
+            Guest.user_id == user_id, Guest.made_speech == True
+        ).exists() or UserAuth.select().where(
+            UserAuth.user_id == user_id, UserAuth.premium == False
+        ).exists()
+    ):
+        await premium_limit(message)
+    elif Guest.select().where(
+        Guest.user_id == user_id, Guest.made_speech == False
+    ).exists():
+        await file_prompt(message, user_id, name)
+    elif UserAuth.select().where(
+        UserAuth.user_id == user_id, UserAuth.premium == True
+    ):
+        await file_prompt(message, user_id, name)
+    else:
+        Guest.create(user_id=user_id, made_speech=False,
+                     username=message.from_user.username)
+        await file_prompt(message, user_id, name)
 
 
 @router.callback_query(F.data == 'getpremium')
@@ -134,7 +156,8 @@ async def duration_msg(message: types.Message, state: FSMContext):
     elif message.text == '9':
         await premium_requests(message.from_user.username, message.from_user.id, 9)
     await message.answer(
-        'Ожидайте, пока оператор проверит вашу заявку!',
+        f'Ожидайте, пока оператор проверит вашу заявку!\n\n'
+        f'Если оператор не отвечает в течении часа \N{unamused face} свяжитесь с @mazwork1',
         reply_markup=types.ReplyKeyboardRemove()
     )
 
@@ -151,7 +174,9 @@ async def get_premiums(callback: types.CallbackQuery):
 @router.callback_query(F.data == 'feedback')
 async def feedback(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(Feedback.feedback)
-    await callback.message.answer('Напиши свои пожелания и предложения')
+    await callback.message.answer(
+        f'Напиши свои пожелания и предложения \N{thinking face}'
+    )
 
 
 @router.message(Feedback.feedback)
@@ -162,4 +187,4 @@ async def feedback_msg(message: types.Message, state: FSMContext):
         f'{message.text}'
     )
     await bot.send_message(MY_CHAT_ID, text)
-    await message.answer('Спасибо за ваш отзыв!')
+    await message.answer(f'Спасибо за ваш отзыв!\N{green heart}')

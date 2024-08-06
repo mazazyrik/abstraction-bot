@@ -1,4 +1,5 @@
 import datetime
+import logging
 
 from aiogram import types
 from aiogram.fsm.state import State, StatesGroup
@@ -7,8 +8,10 @@ from pathlib import Path
 
 from main_speech import main as speech_main
 from threads import ThreadWithReturnValue
+from chat import add_prompt
 from constants import MY_CHAT_ID, bot
-from db import UserAuth
+from db import UserAuth, Guest
+from util_tools.file_handler import handle_file as file_handle
 
 
 class Text(StatesGroup):
@@ -100,10 +103,48 @@ def check_premium(user_id):
         UserAuth.user_id == user_id,
         UserAuth.premium == True
     )
-    expiry = (user.expiry_date - datetime.datetime.now()).days
+    try:
+        expiry = (user.expiry_date - datetime.datetime.now()).days
+    except AttributeError:
+        return None
     if expiry <= 0:
         user.premium = False
 
     if user is not None:
         return expiry
     return None
+
+
+async def premium_limit(message):
+    button = types.InlineKeyboardButton(
+        text='Получить премиум', callback_data='getpremium')
+    keyboard = InlineKeyboardBuilder()
+    keyboard.add(button)
+
+    await message.answer(f'{message.from_user.first_name}, '
+                         f'ты уже пробовал!\N{tired face}\n\n'
+                         'Больше коспектов доступно с премиум подпиской.',
+                         reply_markup=keyboard.adjust(1).as_markup())
+
+
+async def file_prompt(message, user_id, name):
+    if message.document is not None:
+        file_id = message.document.file_id
+        file = await bot.get_file(file_id)
+        file_path = file.file_path
+        Guest.update(made_speech=True).where(
+            Guest.user_id == message.from_user.id).execute()
+        logging.info(f'{name} requested file prompt')
+        await file_handle(file, name, file_path, message)
+
+    else:
+        await message.answer('Можно отправлять только файлы!')
+
+
+async def text_util(message, message_text):
+    button = types.InlineKeyboardButton(
+        text='В меню', callback_data='menu')
+    keyboard = InlineKeyboardBuilder()
+    keyboard.add(button)
+    ans = await add_prompt(message_text)
+    await message.answer(ans, reply_markup=keyboard.adjust(1).as_markup())
