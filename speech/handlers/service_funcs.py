@@ -1,13 +1,14 @@
 # flake8: noqa
 import os
-from ogg_to_mp3 import to_mp3
 
 from aiogram import types, F, Router
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.filters import Command
+
 from constants import MY_CHAT_ID, bot
 from db import UserAuth, Guest
-from util_tools.utils import main_speech_func
+from ogg_to_mp3 import to_mp3
+from util_tools.utils import check_premium, main_speech_func, user_expiry_date
 
 
 router = Router()
@@ -35,6 +36,7 @@ async def menu(callback: types.CallbackQuery):
     await callback.message.edit_reply_markup(
         reply_markup=keyboard.adjust(1).as_markup()
     )
+
 
 @router.message(Command("start"))
 async def cmd_start(message: types.Message):
@@ -88,7 +90,7 @@ async def cmd_start(message: types.Message):
             f'с возможностями бота и перейти в меню. \N{TRIANGULAR FLAG ON POST}\n'
             f'\nБот умеет:\n'
             f'\N{DIGIT ONE}. '
-            f' Делать коспекты из голосовых сообщений или мп3 файлом до 20 мб\n'
+            f' Делать коспекты из голосовых сообщений или мп3 файлов до 20 мб\n'
             f'\N{DIGIT TWO}. '
             f' Писать конспекты из сообщений до 4096 символов\n'
             f'\N{DIGIT THREE}. '
@@ -143,6 +145,8 @@ async def cmd_try(callback: types.CallbackQuery):
 
 @router.message(F.content_type.in_({'audio', 'voice'}))
 async def voice_message_handler(message: types.Message):
+    user_id = message.from_user.id
+    check_premium(user_id)
     name = message.from_user.username
     premium_users = [user.username for user in UserAuth.select().where(
         UserAuth.premium == True)]
@@ -195,7 +199,7 @@ async def voice_message_handler(message: types.Message):
 
         keyboard.add(*kb)
         await message.answer(
-            'У вас нет премиума! Что бы получить премиум, нажми /getpremium',
+            'У вас нет премиума! Что бы получить премиум, нажми "Получить премиум"!',
             reply_markup=keyboard.adjust(1).as_markup()
         )
 
@@ -227,9 +231,12 @@ async def give_premium(callback: types.CallbackQuery):
     args = args.replace(' запросил премиум!', '')
     username = args.split(', ')[0]
     user_id = int(args.split(', ')[1])
+    duration = int(args.split(', ')[2])
     user = UserAuth.get_or_none(
         UserAuth.user_id == int(user_id),
-        UserAuth.username == username)
+        UserAuth.username == username,
+        UserAuth.premium == True
+    )
 
     if user is not None:
         await callback.message.answer('Такой пользователь уже есть!',
@@ -238,7 +245,8 @@ async def give_premium(callback: types.CallbackQuery):
         UserAuth.create(
             username=username,
             premium=True,
-            user_id=int(user_id)
+            user_id=int(user_id),
+            expiry_date=user_expiry_date(duration)
         )
 
         kb = [
@@ -253,7 +261,7 @@ async def give_premium(callback: types.CallbackQuery):
                                           keyboard.adjust(1).as_markup()
                                       ))
         await bot.send_message(
-            int(user_id), 'Вы получили премиум!',
+            int(user_id), f'Вы получили премиум!',
             reply_markup=keyboard.adjust(1).as_markup()
         )
 

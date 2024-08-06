@@ -1,11 +1,14 @@
-from threads import ThreadWithReturnValue
-from aiogram.fsm.state import State, StatesGroup
-from pathlib import Path
+import datetime
+
 from aiogram import types
+from aiogram.fsm.state import State, StatesGroup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from pathlib import Path
 
 from main_speech import main as speech_main
+from threads import ThreadWithReturnValue
 from constants import MY_CHAT_ID, bot
+from db import UserAuth
 
 
 class Text(StatesGroup):
@@ -18,6 +21,10 @@ class File(StatesGroup):
 
 class Feedback(StatesGroup):
     feedback = State()
+
+
+class Premium(StatesGroup):
+    duration = State()
 
 
 async def transcribe_audio_thread(name: str):
@@ -35,7 +42,7 @@ async def handle_file(file: types.File, file_name: str, path: str):
     )
 
 
-async def premium_requests(username, user_id):
+async def premium_requests(username, user_id, duration):
     kb = [
         types.InlineKeyboardButton(
             text=f"Выдать премиум {username}", callback_data='give_premium'),
@@ -46,7 +53,8 @@ async def premium_requests(username, user_id):
 
     keyboard.add(*kb)
     await bot.send_message(
-        MY_CHAT_ID, f'Пользователь {username}, запросил премиум! {user_id}',
+        MY_CHAT_ID, f'Пользователь {
+            username}, запросил премиум! {user_id}, {duration}',
         reply_markup=keyboard.adjust(1).as_markup()
     )
 
@@ -75,3 +83,27 @@ async def del_premium_request(username, user_id):
         MY_CHAT_ID, f'Забрать премиум у пользователя {username}, {user_id}??',
         reply_markup=keyboard.adjust(1).as_markup()
     )
+
+
+def delete_premium(user_id):
+    return UserAuth.get(
+        UserAuth.user_id == user_id, UserAuth.premium == False
+    )
+
+
+def user_expiry_date(term):
+    return datetime.datetime.now() + datetime.timedelta(days=30 * term)
+
+
+def check_premium(user_id):
+    user = UserAuth.get_or_none(
+        UserAuth.user_id == user_id,
+        UserAuth.premium == True
+    )
+    expiry = (user.expiry_date - datetime.datetime.now()).days
+    if expiry <= 0:
+        user.premium = False
+
+    if user is not None:
+        return expiry
+    return None
