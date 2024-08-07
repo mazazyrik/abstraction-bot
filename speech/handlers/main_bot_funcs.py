@@ -37,7 +37,11 @@ async def text_msg(message: types.Message, state: FSMContext):
     check_premium(user_id)
     await state.clear()
     message_text = message.text
-    if (
+    if UserAuth.select().where(
+        UserAuth.user_id == user_id, UserAuth.premium == True
+    ):
+        await text_util(message, message_text)
+    elif (
         Guest.select().where(
             Guest.user_id == user_id, Guest.made_speech == True
         ).exists() or UserAuth.select().where(
@@ -51,13 +55,9 @@ async def text_msg(message: types.Message, state: FSMContext):
             Guest.user_id == user_id, Guest.made_speech == False
         ).exists()
     ):
-        text_util(message, message_text)
+        await text_util(message, message_text)
         Guest.update(made_speech=True).where(
             Guest.user_id == message.from_user.id).execute()
-    elif UserAuth.select().where(
-        UserAuth.user_id == user_id, UserAuth.premium == True
-    ):
-        text_util(message, message_text)
     else:
         Guest.create(user_id=user_id, made_speech=False,
                      username=message.from_user.username)
@@ -74,7 +74,10 @@ async def text_msg(message: types.Message, state: FSMContext):
 @router.callback_query(F.data == 'text_file')
 async def text_file(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(File.file)
-    await callback.message.answer('Отправь мне файл для создания коспекта.')
+    await callback.message.answer(
+        f'Отправь мне файл для создания коспекта.\n\n'
+        'Файлы принимаются только с расширением .txt'
+    )
 
 
 @router.message(File.file, F.content_type.in_({'document'}))
@@ -83,7 +86,11 @@ async def text_file_msg(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     check_premium(user_id)
     name = message.from_user.username
-    if (
+    if UserAuth.select().where(
+        UserAuth.user_id == user_id, UserAuth.premium == True
+    ):
+        await file_prompt(message, user_id, name)
+    elif (
         Guest.select().where(
             Guest.user_id == user_id, Guest.made_speech == True
         ).exists() or UserAuth.select().where(
@@ -94,10 +101,6 @@ async def text_file_msg(message: types.Message, state: FSMContext):
     elif Guest.select().where(
         Guest.user_id == user_id, Guest.made_speech == False
     ).exists():
-        await file_prompt(message, user_id, name)
-    elif UserAuth.select().where(
-        UserAuth.user_id == user_id, UserAuth.premium == True
-    ):
         await file_prompt(message, user_id, name)
     else:
         Guest.create(user_id=user_id, made_speech=False,

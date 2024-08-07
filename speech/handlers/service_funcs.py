@@ -20,8 +20,10 @@ async def menu(callback: types.CallbackQuery):
     keyboard.add(types.InlineKeyboardButton(
         text='Проверить премиум', callback_data='checkpremium'),
         types.InlineKeyboardButton(
-            text='Получить премиум', callback_data='getpremium'
-    ),
+            text='Написать конспект по голосовому сообщению', callback_data='voice'
+        ),
+        types.InlineKeyboardButton(
+            text='Получить премиум', callback_data='getpremium'),
         types.InlineKeyboardButton(
             text="Попробовать", callback_data='try'),
         types.InlineKeyboardButton(
@@ -105,6 +107,7 @@ async def cmd_start(message: types.Message):
             f'\N{smiling face with sunglasses}',
             reply_markup=keyboard.adjust(1).as_markup()
         )
+
 
 @router.callback_query(F.data == 'try')
 async def cmd_try(callback: types.CallbackQuery):
@@ -193,12 +196,15 @@ async def voice_message_handler(message: types.Message):
         kb = [
             types.InlineKeyboardButton(
                 text='Получить премиум', callback_data='getpremium'),
+            types.InlineKeyboardButton(
+                text="Попробовать", callback_data='try'),
         ]
         keyboard = InlineKeyboardBuilder()
 
         keyboard.add(*kb)
         await message.answer(
-            'У вас нет премиума! Что бы получить премиум, нажми "Получить премиум"!',
+            f'У вас нет премиума! Что бы получить премиум, нажми "Получить премиум"!\n\n'
+            'Если ты не пробовал, то нажми попробовать!',
             reply_markup=keyboard.adjust(1).as_markup()
         )
 
@@ -223,6 +229,14 @@ async def admin(callback=types.CallbackQuery):
     else:
         await callback.answer("Ты не админ")
 
+
+@router.callback_query(F.data == 'voice')
+async def voice(callback: types.CallbackQuery):
+    await callback.message.answer(
+        f'Отправь голосовое сообщение.\n\n'
+        'Если у тебя айфон, то ты можешь '
+        'поделиться записью с диктофона и отправить боту.'
+    )
 
 @router.callback_query(F.data == 'give_premium')
 async def give_premium(callback: types.CallbackQuery):

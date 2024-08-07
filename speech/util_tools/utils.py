@@ -1,3 +1,5 @@
+# flake8: noqa
+import os
 import datetime
 import logging
 
@@ -12,6 +14,7 @@ from chat import add_prompt
 from constants import MY_CHAT_ID, bot
 from db import UserAuth, Guest
 from util_tools.file_handler import handle_file as file_handle
+from util_tools.file_handler import final_file_write
 
 
 class Text(StatesGroup):
@@ -64,12 +67,25 @@ async def premium_requests(username, user_id, duration):
 
 async def main_speech_func(message, name, msg):
     ans = await speech_main(f"{name}.mp3")
+    await bot.delete_message(message.chat.id, msg.message_id)
+
+    final_file = await final_file_write(ans, name)
+    file = types.FSInputFile(final_file)
     button = types.InlineKeyboardButton(
         text='В меню', callback_data='menu')
     keyboard = InlineKeyboardBuilder()
     keyboard.add(button)
-    await message.answer(ans, reply_markup=keyboard.adjust(1).as_markup())
-    await bot.delete_message(message.chat.id, msg.message_id)
+    await bot.send_message(
+        message.chat.id,
+        f'Готово!\N{smiling face with sunglasses}\n\n'
+        'Ниже - твой коснпект.',
+    )
+    await bot.send_document(
+        message.chat.id, file, reply_markup=keyboard.adjust(
+            1).as_markup()
+    )
+    os.remove(f"{name}_final.txt")
+
 
 
 async def del_premium_request(username, user_id):
