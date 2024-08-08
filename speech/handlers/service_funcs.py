@@ -51,7 +51,8 @@ async def menu(callback: types.CallbackQuery):
 @router.message(Command("start"))
 async def cmd_start(message: types.Message):
     user_id = message.from_user.id
-    username = message.from_user.username
+    check_premium(user_id)
+    name = message.from_user.first_name
     if user_id == MY_CHAT_ID:
 
         keyboard = InlineKeyboardBuilder()
@@ -72,7 +73,7 @@ async def cmd_start(message: types.Message):
             text="В меню", callback_data='menu'
         ))
         await message.answer(
-            f'Привет, {username}!\N{raised hand} Я смотрю '
+            f'Привет, {name}!\N{raised hand} Я смотрю '
             f'ты уже смершарик, \N{smiling face with sunglasses}'
             f' так что вот тебе меню!\n'
             f'\nДля конспекта из аудио отправь голосовое '
@@ -91,7 +92,7 @@ async def cmd_start(message: types.Message):
         keyboard = InlineKeyboardBuilder()
         keyboard.add(*kb)
         await message.answer(
-            f'Привет, {username}! \N{raised hand} \n'
+            f'Привет, {name}! \N{raised hand} \n'
             f'Добро пожаловать в бота Abstraction\N{TRADE MARK SIGN}.\n'
             f'\nПрошу тебя ознакомиться '
             f'с возможностями бота и перейти в меню. \N{TRIANGULAR FLAG ON POST}\n'

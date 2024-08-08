@@ -76,7 +76,7 @@ async def text_file(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(File.file)
     await callback.message.answer(
         f'Отправь мне файл для создания коспекта.\n\n'
-        'Файлы принимаются только с расширением .txt'
+        'Файлы принимаются только с расширениями .txt и .pdf'
     )
 
 

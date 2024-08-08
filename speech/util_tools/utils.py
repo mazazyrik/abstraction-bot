@@ -14,7 +14,7 @@ from chat import add_prompt
 from constants import MY_CHAT_ID, bot
 from db import UserAuth, Guest
 from util_tools.file_handler import handle_file as file_handle
-from util_tools.file_handler import final_file_write
+from util_tools.file_handler import final_file_write, handle_pdf
 
 
 class Text(StatesGroup):
@@ -151,10 +151,15 @@ async def file_prompt(message, user_id, name):
         file_id = message.document.file_id
         file = await bot.get_file(file_id)
         file_path = file.file_path
+
         Guest.update(made_speech=True).where(
             Guest.user_id == message.from_user.id).execute()
         logging.info(f'{name} requested file prompt')
-        await file_handle(file, name, file_path, message)
+
+        if file_path.endswith('.txt'):
+            await file_handle(file, name, file_path, message)
+        elif file_path.endswith('.pdf'):
+            await handle_pdf(file, name, file_path, message)
 
     else:
         await message.answer('Можно отправлять только файлы!')
