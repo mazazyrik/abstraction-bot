@@ -4,11 +4,18 @@ import os
 from aiogram import types, F, Router
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
+
 
 from constants import MY_CHAT_ID, bot
 from db import UserAuth, Guest
 from ogg_to_mp3 import to_mp3
-from util_tools.utils import check_premium, main_speech_func, user_expiry_date
+from util_tools.utils import (
+    check_premium,
+    main_speech_func,
+    user_expiry_date,
+    Voice
+)
 
 
 router = Router()
@@ -17,23 +24,24 @@ router = Router()
 @router.callback_query(F.data == 'menu')
 async def menu(callback: types.CallbackQuery):
     keyboard = InlineKeyboardBuilder()
-    keyboard.add(types.InlineKeyboardButton(
-        text='Проверить премиум', callback_data='checkpremium'),
+    keyboard.add(
         types.InlineKeyboardButton(
-            text='Написать конспект по голосовому сообщению', callback_data='voice'
-        ),
+            text="Попробовать",
+            callback_data='try'),
+        types.InlineKeyboardButton(
+        text='Конспект из голосового', callback_data='voice'),
+        types.InlineKeyboardButton(
+            text='Конспект сообщения', callback_data='text'),
+        types.InlineKeyboardButton(
+            text='Конспект файла', callback_data='text_file'),
         types.InlineKeyboardButton(
             text='Получить премиум', callback_data='getpremium'),
         types.InlineKeyboardButton(
-            text="Попробовать", callback_data='try'),
+        text='Проверить премиум', callback_data='checkpremium'),
         types.InlineKeyboardButton(
-            text='Написать конспект текста', callback_data='text'),
-        types.InlineKeyboardButton(
-            text='Написать конспект текста по файлу', callback_data='text_file'),
+            text='Обратная связь', callback_data='feedback'),
         types.InlineKeyboardButton(
             text="В админку", callback_data='admin'),
-        types.InlineKeyboardButton(
-            text='Обратная связь', callback_data='feedback')
     )
     await callback.message.edit_reply_markup(
         reply_markup=keyboard.adjust(1).as_markup()
@@ -75,9 +83,6 @@ async def cmd_start(message: types.Message):
     else:
         kb = [
             types.InlineKeyboardButton(
-                text='Получить премиум', callback_data='getpremium'),
-
-            types.InlineKeyboardButton(
                 text="В меню", callback_data='menu'
             ),
 
@@ -90,19 +95,14 @@ async def cmd_start(message: types.Message):
             f'Добро пожаловать в бота Abstraction\N{TRADE MARK SIGN}.\n'
             f'\nПрошу тебя ознакомиться '
             f'с возможностями бота и перейти в меню. \N{TRIANGULAR FLAG ON POST}\n'
+            f'\nПЕРВЫЙ КОСНПЕКТ БЕСПЛАТНО \N{money-mouth face}.\n'
             f'\nБот умеет:\n'
             f'\N{DIGIT ONE}. '
-            f' Делать коспекты из голосовых сообщений или мп3 файлов до 20 мб\n'
+            f' Делать коспекты из голосовых сообщений\n'
             f'\N{DIGIT TWO}. '
-            f' Писать конспекты из сообщений до 4096 символов\n'
+            f' Писать конспекты из сообщений\n'
             f'\N{DIGIT THREE}. '
-            f' Писать конспекты из txt файлов\n'
-            f'\N{DIGIT FOUR}. '
-            f' Без преимума 1 коспект бесплатно\n'
-            f'\N{DIGIT FIVE}. '
-            f' С премиумом безлимитное количетво коспектов в месяц\n'
-            f'\nДля конспекта из аудио отправь голосовое '
-            f'сообщение или файл с расширением .mp3\n'
+            f' Писать конспекты из файлов файлов\n'
             f'\nТакже, если ты нашел баг или хочешь предложить новую фишку - напиши @mazwork1'
             f'\N{smiling face with sunglasses}',
             reply_markup=keyboard.adjust(1).as_markup()
@@ -110,7 +110,7 @@ async def cmd_start(message: types.Message):
 
 
 @router.callback_query(F.data == 'try')
-async def cmd_try(callback: types.CallbackQuery):
+async def cmd_try(callback: types.CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
     if UserAuth.select().where(
             UserAuth.premium == True, UserAuth.user_id == user_id).exists():
@@ -134,10 +134,13 @@ async def cmd_try(callback: types.CallbackQuery):
     elif Guest.select().where(
         Guest.user_id == user_id, Guest.made_speech == False
     ).exists():
+        await state.set_state(Voice.voice)
         await callback.message.answer(
             'Отправляй свое голосовое', show_alert=True
         )
     else:
+        await state.set_state(Voice.voice)
+
         Guest.create(user_id=user_id, made_speech=False,
                      username=callback.from_user.username)
         await callback.message.answer(
@@ -145,8 +148,9 @@ async def cmd_try(callback: types.CallbackQuery):
         )
 
 
-@router.message(F.content_type.in_({'audio', 'voice'}))
-async def voice_message_handler(message: types.Message):
+@router.message(Voice.voice, F.content_type.in_({'audio', 'voice'}))
+async def voice_message_handler(message: types.Message, state: FSMContext):
+    await state.clear()
     user_id = message.from_user.id
     check_premium(user_id)
     name = message.from_user.username
@@ -231,12 +235,14 @@ async def admin(callback=types.CallbackQuery):
 
 
 @router.callback_query(F.data == 'voice')
-async def voice(callback: types.CallbackQuery):
+async def voice(callback: types.CallbackQuery, state: FSMContext):
+    await state.set_state(Voice.voice)
     await callback.message.answer(
         f'Отправь голосовое сообщение.\n\n'
         'Если у тебя айфон, то ты можешь '
         'поделиться записью с диктофона и отправить боту.'
     )
+
 
 @router.callback_query(F.data == 'give_premium')
 async def give_premium(callback: types.CallbackQuery):

@@ -33,6 +33,10 @@ class Premium(StatesGroup):
     duration = State()
 
 
+class Voice(StatesGroup):
+    voice = State()
+
+
 async def transcribe_audio_thread(name: str):
     thread = ThreadWithReturnValue(
         target=speech_main, args=(name,))
@@ -85,7 +89,6 @@ async def main_speech_func(message, name, msg):
             1).as_markup()
     )
     os.remove(f"{name}_final.txt")
-
 
 
 async def del_premium_request(username, user_id):
