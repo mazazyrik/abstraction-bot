@@ -6,6 +6,8 @@ import logging
 from aiogram import types
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.exceptions import TelegramBadRequest
+
 from pathlib import Path
 
 from main_speech import main as speech_main
@@ -35,6 +37,10 @@ class Premium(StatesGroup):
 
 class Voice(StatesGroup):
     voice = State()
+
+
+class FileName(StatesGroup):
+    name = State()
 
 
 async def transcribe_audio_thread(name: str):
@@ -70,9 +76,14 @@ async def premium_requests(username, user_id, duration):
 
 
 async def main_speech_func(message, name, msg):
-    ans = await speech_main(f"{name}.mp3")
-    await bot.delete_message(message.chat.id, msg.message_id)
-
+    logging.info('main_speech_func started')
+    if not name.endswith('.mp3'):
+        ans = await speech_main(f"{name}.mp3")
+        await bot.delete_message(message.chat.id, msg.message_id)
+    else:
+        ans = await speech_main(f'uploaded_files/{name}')
+        await bot.delete_message(message.chat.id, msg.message_id)
+        os.remove(f'uploaded_files/{name}')
     final_file = await final_file_write(ans, name)
     file = types.FSInputFile(final_file)
     button = types.InlineKeyboardButton(
@@ -146,10 +157,27 @@ async def premium_limit(message):
                          reply_markup=keyboard.adjust(1).as_markup())
 
 
+async def bot_get_file(file_id, message):
+    button = types.InlineKeyboardButton(
+        text='Загрузил', callback_data='loaded')
+    keyboard = InlineKeyboardBuilder()
+    keyboard.add(button)
+    try:
+        file = await bot.get_file(file_id)
+        return file
+    except TelegramBadRequest:
+        await message.reply(
+            f'Файл слишком большой.\n\n'
+            'Пожалуйста, загрузи файл на сайт http://abstraction.ddns.net '
+            'скопируй название файла и нажми кнопку "Загрузил".',
+            reply_markup=keyboard.adjust(1).as_markup()
+        )
+
+
 async def file_prompt(message, user_id, name):
     if message.document is not None:
         file_id = message.document.file_id
-        file = await bot.get_file(file_id)
+        file = await bot_get_file(file_id, message)
         file_path = file.file_path
 
         Guest.update(made_speech=True).where(
@@ -160,6 +188,8 @@ async def file_prompt(message, user_id, name):
             await file_handle(file, name, file_path, message)
         elif file_path.endswith('.pdf'):
             await handle_pdf(file, name, file_path, message)
+        else:
+            await message.answer('Неподдерживаемый тип файлов!')
 
     else:
         await message.answer('Можно отправлять только файлы!')

@@ -39,4 +39,12 @@ class UserAuth(Model):
         database = db
 
 
+class FileModel(Model):
+    filename = CharField()
+    uploaded_at = DateTimeField(default=datetime.datetime.now)
+
+    class Meta:
+        database = db
+
+
 db.create_tables([UserAuth, Guest])

@@ -9,7 +9,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 class Speech():
 
-    def __init__(self, model='small', device=DEVICE, download_root='models'):
+    def __init__(self, model='medium', device=DEVICE, download_root='models'):
         self.model = whisper.load_model(model, download_root=download_root)
         self.device = device
 

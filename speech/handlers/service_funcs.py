@@ -10,12 +10,17 @@ from aiogram.fsm.context import FSMContext
 from constants import MY_CHAT_ID, bot
 from db import UserAuth, Guest
 from ogg_to_mp3 import to_mp3
+from speech.util_tools.file_handler import handle_pdf_or_txt_server
 from util_tools.utils import (
     check_premium,
+    file_prompt,
     main_speech_func,
     user_expiry_date,
-    Voice
+    Voice, 
+    bot_get_file, 
+    FileName
 )
+from server import get_file
 
 
 router = Router()
@@ -29,7 +34,7 @@ async def menu(callback: types.CallbackQuery):
             text="Попробовать",
             callback_data='try'),
         types.InlineKeyboardButton(
-        text='Конспект из голосового', callback_data='voice'),
+            text='Конспект из голосового', callback_data='voice'),
         types.InlineKeyboardButton(
             text='Конспект сообщения', callback_data='text'),
         types.InlineKeyboardButton(
@@ -37,11 +42,9 @@ async def menu(callback: types.CallbackQuery):
         types.InlineKeyboardButton(
             text='Получить премиум', callback_data='getpremium'),
         types.InlineKeyboardButton(
-        text='Проверить премиум', callback_data='checkpremium'),
+            text='Проверить премиум', callback_data='checkpremium'),
         types.InlineKeyboardButton(
             text='Обратная связь', callback_data='feedback'),
-        types.InlineKeyboardButton(
-            text="В админку", callback_data='admin'),
     )
     await callback.message.edit_reply_markup(
         reply_markup=keyboard.adjust(1).as_markup()
@@ -162,18 +165,19 @@ async def voice_message_handler(message: types.Message, state: FSMContext):
     if name in (premium_users or aval_guests):
         if message.audio is not None:
             file_id = message.audio.file_id
-            file = await bot.get_file(file_id)
-            file_path = file.file_path
-            try:
-                await bot.download_file(file_path, f"{name}.mp3")
-                msg = await message.reply("Загрузка...")
-                await main_speech_func(message, name, msg)
-                os.remove(f"{name}.mp3")
-            except FileExistsError:
-                await message.reply(
-                    "Вы не можете отправить новый запрос, "
-                    "пока не закончите предыдущий!"
-                )
+            file = await bot_get_file(file_id, message)
+            if file is not None:       
+                file_path = file.file_path
+                try:
+                    await bot.download_file(file_path, f"{name}.mp3")
+                    msg = await message.reply("Загрузка...")
+                    await main_speech_func(message, name, msg)
+                    os.remove(f"{name}.mp3")
+                except FileExistsError:
+                    await message.reply(
+                        "Вы не можете отправить новый запрос, "
+                        "пока не закончите предыдущий!"
+                    )
 
         else:
             file_id = message.voice.file_id
@@ -239,7 +243,7 @@ async def admin(callback=types.CallbackQuery):
 async def voice(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(Voice.voice)
     await callback.message.answer(
-        f'Отправь голосовое сообщение.\n\n'
+        f'Отправь голосовое сообщение или мп3 файл.\n\n'
         'Если у тебя айфон, то ты можешь '
         'поделиться записью с диктофона и отправить боту.'
     )
@@ -319,3 +323,25 @@ async def del_premium(callback: types.CallbackQuery):
                                reply_markup=(
             keyboard.adjust(1).as_markup()
         ))
+
+
+@router.callback_query(F.data == 'loaded')
+async def loaded(callback: types.CallbackQuery, state: FSMContext):
+    await state.set_state(FileName.name)
+    await callback.message.edit_text('Отлично! Вставь название файла и жди конспект!')
+
+
+@router.message(FileName.name)
+async def download_file(message: types.Message, state: FSMContext):
+    name = message.text
+    await state.clear()
+    get_file(name)
+    await message.reply(
+        f'Загрузка...\n\n'
+        'Длинные аудиозаписи могут долго'
+        ' обрабатываться из-за высокой нагрузки.'
+    )
+    if name.endswith('.mp3'):
+        await main_speech_func(message, name, message)
+    else:
+        await handle_pdf_or_txt_server(name, message, name)

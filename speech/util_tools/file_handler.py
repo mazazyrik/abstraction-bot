@@ -53,6 +53,52 @@ async def handle_file(
         )
 
 
+async def handle_pdf_or_txt_server(file, message, name):
+    if file.endswith('.txt'):
+        msg = await message.reply("Загрузка...")
+        f = open(f'uploaded_files/{file}', 'r')
+        text = f.read()
+
+        final_file = await final_file_write(text, name)
+        await bot.delete_message(message.chat.id, msg.message_id)
+
+        file = types.FSInputFile(final_file)
+
+        button = types.InlineKeyboardButton(
+            text='В меню', callback_data='menu')
+        keyboard = InlineKeyboardBuilder()
+        keyboard.add(button)
+
+        await bot.send_document(
+            message.chat.id, file, reply_markup=keyboard.adjust(
+                1).as_markup()
+        )
+        os.remove(f"{name}_final.txt")
+    elif file.endswith('.pdf'):
+        msg = await message.reply("Загрузка...")
+
+        reader = PyPDF2.PdfReader(f'uploaded_files/{file}')
+        text = ''
+        for page in reader.pages:
+            text += page.extract_text()
+
+        final_file = await final_file_write(text, name)
+        await bot.delete_message(message.chat.id, msg.message_id)
+
+        file = types.FSInputFile(final_file)
+
+        button = types.InlineKeyboardButton(
+            text='В меню', callback_data='menu')
+        keyboard = InlineKeyboardBuilder()
+        keyboard.add(button)
+
+        await bot.send_document(
+            message.chat.id, file, reply_markup=keyboard.adjust(
+                1).as_markup()
+        )
+        os.remove(f"{name}_final.txt")
+
+
 async def handle_pdf(
         file: types.File,
         name: str,
