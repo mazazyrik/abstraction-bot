@@ -1,4 +1,5 @@
 # flake8: noqa
+import logging
 import os
 
 from aiogram import types, F, Router
@@ -10,17 +11,16 @@ from aiogram.fsm.context import FSMContext
 from constants import MY_CHAT_ID, bot
 from db import UserAuth, Guest
 from ogg_to_mp3 import to_mp3
-from speech.util_tools.file_handler import handle_pdf_or_txt_server
 from util_tools.utils import (
     check_premium,
-    file_prompt,
     main_speech_func,
     user_expiry_date,
     Voice, 
     bot_get_file, 
-    FileName
+    FileName,
 )
 from server import get_file
+from util_tools.file_handler import handle_pdf_or_txt_server
 
 
 router = Router()
@@ -335,13 +335,16 @@ async def loaded(callback: types.CallbackQuery, state: FSMContext):
 async def download_file(message: types.Message, state: FSMContext):
     name = message.text
     await state.clear()
-    get_file(name)
     await message.reply(
         f'Загрузка...\n\n'
         'Длинные аудиозаписи могут долго'
         ' обрабатываться из-за высокой нагрузки.'
     )
+    await get_file(name, message)
     if name.endswith('.mp3'):
         await main_speech_func(message, name, message)
-    else:
+    elif name.endswith('.txt') or name.endswith('.pdf'):
+        logging.info(
+            'file donloaded and calculations are ready to prepare'
+        )
         await handle_pdf_or_txt_server(name, message, name)

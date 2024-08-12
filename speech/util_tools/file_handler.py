@@ -55,12 +55,11 @@ async def handle_file(
 
 async def handle_pdf_or_txt_server(file, message, name):
     if file.endswith('.txt'):
-        msg = await message.reply("Загрузка...")
         f = open(f'uploaded_files/{file}', 'r')
         text = f.read()
 
         final_file = await final_file_write(text, name)
-        await bot.delete_message(message.chat.id, msg.message_id)
+        await bot.delete_message(message.chat.id, message.message_id)
 
         file = types.FSInputFile(final_file)
 
@@ -74,6 +73,8 @@ async def handle_pdf_or_txt_server(file, message, name):
                 1).as_markup()
         )
         os.remove(f"{name}_final.txt")
+        os.remove(f'uploaded_files/{name}')
+
     elif file.endswith('.pdf'):
         msg = await message.reply("Загрузка...")
 
@@ -97,6 +98,7 @@ async def handle_pdf_or_txt_server(file, message, name):
                 1).as_markup()
         )
         os.remove(f"{name}_final.txt")
+        os.remove(f'uploaded_files/{name}')
 
 
 async def handle_pdf(

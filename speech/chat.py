@@ -61,13 +61,23 @@ async def add_prompt(text):
     response = requests.post(url, headers=headers, json=prompt)
     result = response.text
     result_json = json.loads(result)
-
-    return result_json.get(
-        'result'
-    ).get(
-        'alternatives'
-    )[0].get(
-        'message'
-    ).get(
-        'text'
-    )
+    try:
+        res = result_json.get(
+            'result'
+        ).get(
+            'alternatives'
+        )[0].get(
+            'message'
+        ).get(
+            'text'
+        )
+    except AttributeError:
+        res = (
+            'Нейросеть не смогла расшифровать этот текст. '
+            f'Попробуйте ещё раз.\n\n'
+            'Если вы делали разбор файла, то проверьте не состоит ли '
+            f'он из картинок.\n\n'
+            'Если вы делали разбор аудио, то проверьте не '
+            'состоит ли он из тишины.'
+        )
+    return res

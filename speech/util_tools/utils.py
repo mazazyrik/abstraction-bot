@@ -172,24 +172,26 @@ async def bot_get_file(file_id, message):
             'скопируй название файла и нажми кнопку "Загрузил".',
             reply_markup=keyboard.adjust(1).as_markup()
         )
+        return None
 
 
 async def file_prompt(message, user_id, name):
     if message.document is not None:
         file_id = message.document.file_id
         file = await bot_get_file(file_id, message)
-        file_path = file.file_path
+        if file is not None:
+            file_path = file.file_path
 
-        Guest.update(made_speech=True).where(
-            Guest.user_id == message.from_user.id).execute()
-        logging.info(f'{name} requested file prompt')
+            Guest.update(made_speech=True).where(
+                Guest.user_id == message.from_user.id).execute()
+            logging.info(f'{name} requested file prompt')
 
-        if file_path.endswith('.txt'):
-            await file_handle(file, name, file_path, message)
-        elif file_path.endswith('.pdf'):
-            await handle_pdf(file, name, file_path, message)
-        else:
-            await message.answer('Неподдерживаемый тип файлов!')
+            if file_path.endswith('.txt'):
+                await file_handle(file, name, file_path, message)
+            elif file_path.endswith('.pdf'):
+                await handle_pdf(file, name, file_path, message)
+            else:
+                await message.answer('Неподдерживаемый тип файлов!')
 
     else:
         await message.answer('Можно отправлять только файлы!')
