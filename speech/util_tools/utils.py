@@ -168,7 +168,7 @@ async def bot_get_file(file_id, message):
     except TelegramBadRequest:
         await message.reply(
             f'Файл слишком большой.\n\n'
-            'Пожалуйста, загрузи файл на сайт http://abstraction.ddns.net '
+            'Пожалуйста, загрузи файл на сайт http://abstraction.sytes.net '
             'скопируй название файла и нажми кнопку "Загрузил".',
             reply_markup=keyboard.adjust(1).as_markup()
         )
