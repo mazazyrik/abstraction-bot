@@ -7,7 +7,11 @@ from constants import bot as my_bot
 from handlers import main_bot_funcs, service_funcs
 
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'  # Specify the date format
+)
 
 
 async def main():
