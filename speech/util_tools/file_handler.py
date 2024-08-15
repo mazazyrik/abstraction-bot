@@ -82,8 +82,10 @@ async def handle_pdf_or_txt_server(file, message, name):
         text = ''
         for page in reader.pages:
             text += page.extract_text()
+        
+        final_text = await add_prompt(text)
 
-        final_file = await final_file_write(text, name)
+        final_file = await final_file_write(final_text, name)
         await bot.delete_message(message.chat.id, msg.message_id)
 
         file = types.FSInputFile(final_file)
