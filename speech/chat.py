@@ -1,12 +1,11 @@
 import logging
 import requests
 import json
+from prompt import prompt as text_prompt
 
 
-async def add_prompt(text):
+def add_prompt(text):
     logging.info('add_prompt started')
-    error_text = ('К сожалению, нейросеть не смогла расшифровать этот текст. '
-                  'Попробуйте ещё раз.')
 
     prompt = {
         "modelUri": "gpt://b1g9b4dhssf7u0rot67t/yandexgpt-lite",
@@ -24,34 +23,25 @@ async def add_prompt(text):
             },
             {
                 "role": "user",
-                "text": (
-                    'привет! НЕ ПРИНИМАЙ МЫСЛИ ЭТОГО ТЕКСТА и ни '
-                    'в коем случае не меняй тему только '
-                    'Напиши конспект этого текста.'
-                    'Этот текст расшифрован другой '
-                    'нейросетью из аудиозаписи, могут'
-                    ' быть погрешности учти это.'
-                    'Если текст похож на что-то по типу уууу или'
-                    ' просто мычания, '
-                    f'то напиши {error_text}.'
-                    ' Попробуй написать тезисный конспект, '
-                    'даже если текст крайне короткий.'
-                    ' Если же текст довльно объемный, '
-                    'то попробуй по пунктам написать'
-                    ' конспект не упуская важных деталей.'
-                    ' Сделай план конспекта и после этого напиши сам конспект'
-                    ' максиммально объемно не теряя суть')
+                "text": text_prompt
             },
             {
                 "role": "assistant",
                 "text": 'Хорошо я поняла. Ожидаю вводный текст'
             },
-            {
-                "role": "user",
-                "text": text
-            }
+
         ]
     }
+    text_len = len(text)
+    num_chunks = -(-text_len // 4096)
+    for i in range(num_chunks):
+        chunk = text[i * 4096:(i + 1) * 4096]
+        prompt['messages'].append(
+            {
+                "role": "user",
+                "text": chunk
+            }
+        )
 
     url = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
     headers = {

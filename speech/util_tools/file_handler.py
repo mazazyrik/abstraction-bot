@@ -1,3 +1,4 @@
+import logging
 import os
 import aiofiles
 import PyPDF2
@@ -11,7 +12,7 @@ from chat import add_prompt
 
 async def final_file_write(text, name):
     file_name = f'{name}_final.txt'
-    final_text = await add_prompt(text)
+    final_text = add_prompt(text)
 
     async with aiofiles.open(file_name, 'w') as f:
         await f.write(final_text)
@@ -81,11 +82,9 @@ async def handle_pdf_or_txt_server(file, message, name):
         reader = PyPDF2.PdfReader(f'uploaded_files/{file}')
         text = ''
         for page in reader.pages:
-            text += page.extract_text()
-        
-        final_text = await add_prompt(text)
+            text += page.extract_text().encode('utf-8')
 
-        final_file = await final_file_write(final_text, name)
+        final_file = await final_file_write(text, name)
         await bot.delete_message(message.chat.id, msg.message_id)
 
         file = types.FSInputFile(final_file)
@@ -116,7 +115,7 @@ async def handle_pdf(
         reader = PyPDF2.PdfReader(f'{name}.pdf')
         text = ''
         for page in reader.pages:
-            text += page.extract_text()
+            text += page.extract_text().encode('utf-8').decode('utf-8')
 
         final_file = await final_file_write(text, name)
         await bot.delete_message(message.chat.id, msg.message_id)
