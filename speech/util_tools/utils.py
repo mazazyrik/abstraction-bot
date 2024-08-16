@@ -69,8 +69,7 @@ async def premium_requests(username, user_id, duration):
 
     keyboard.add(*kb)
     await bot.send_message(
-        MY_CHAT_ID, f'Пользователь {
-            username}, запросил премиум! {user_id}, {duration}',
+        MY_CHAT_ID, f'Пользователь {username}, запросил премиум! {user_id}, {duration}',
         reply_markup=keyboard.adjust(1).as_markup()
     )
 
