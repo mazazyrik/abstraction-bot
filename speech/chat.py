@@ -1,5 +1,6 @@
 import requests
 import logging
+from prompt import prompt as text_prompt
 
 
 def summarize_text(text):
@@ -15,6 +16,14 @@ def summarize_text(text):
                 "role": "system",
                 "text": ("Ты ассистент который помогает "
                          "пользователям в написании конспектов.")
+            },
+            {
+                "role": "user",
+                "text": text_prompt
+            },
+            {
+                "role": "assistant",
+                "text": 'Хорошо я поняла. Ожидаю вводный текст'
             },
             {
                 "role": "user",
