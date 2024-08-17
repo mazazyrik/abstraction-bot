@@ -207,14 +207,14 @@ async def text_util(message, message_text):
 
 
 async def premium_for_payment(username, user_id, term, message):
-    if term ==1:
-        description='Премииум доступ на 1 месяц'
+    if term == 1:
+        description = 'Премииум доступ на 1 месяц'
         PRICE = types.LabeledPrice(label='1 месяц премиума', amount=29900)
     elif term == 3:
         description = 'Премииум доступ на 3 месяца'
         PRICE = types.LabeledPrice(label='1 месяц премиума', amount=80000)
     else:
-        description='Премииум доступ на 9 месяцев'   
+        description = 'Премииум доступ на 9 месяцев'
         PRICE = types.LabeledPrice(label='1 месяц премиума', amount=250000)
     await bot.send_invoice(
         message.chat.id,
@@ -223,65 +223,7 @@ async def premium_for_payment(username, user_id, term, message):
         provider_token=PAYMENTS_TOKEN,
         currency='rub',
         is_flexible=False,
-        prices=[PRICE], 
+        prices=[PRICE],
         start_parameter='abstration',
         payload=f'{username}_premium_4_{term}_{user_id}'
     )
-
-from aiogram import Bot, Dispatcher, executor, types
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.types import LabeledPrice, Invoice, Currency
-
-API_TOKEN = 'YOUR_API_TOKEN'
-PAYMENTS_TOKEN = 'YOUR_PAYMENTS_TOKEN'
-
-bot = Bot(token=API_TOKEN)
-storage = MemoryStorage()
-dp = Dispatcher(bot, storage=storage)
-
-class PremiumStates(StatesGroup):
-    duration_for_payment = State()
-
-@dp.callback_query(F.data == 'pay')
-async def pay(callback: types.CallbackQuery, state: FSMContext):
-    await state.set_state(PremiumStates.duration_for_payment)
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add('1', '3', '9')
-    await callback.message.answer('Выбери длительность премиума', reply_markup=markup)
-
-@dp.message_handler(state=PremiumStates.duration_for_payment)
-async def duration_for_payment_msg(message: types.Message, state: FSMContext):
-    await state.clear()
-    if message.text == '1':
-        await premium_for_payment(message.from_user.username, message.from_user.id, 1, message)
-    elif message.text == '3':
-        await premium_for_payment(message.from_user.username, message.from_user.id, 3, message)
-    elif message.text == '9':
-        await premium_for_payment(message.from_user.username, message.from_user.id, 9, message)
-    await message.answer(
-        f'Если премиум не будет выдан после оплаты \N{unamused face} свяжитесь с @abstractionsupport',
-        reply_markup=types.ReplyKeyboardRemove()
-    )
-
-async def premium_for_payment(username, user_id, term, message):
-    if term == 1:
-        description = 'Премииум доступ на 1 месяц'
-        price = LabeledPrice(label='1 месяц премиума', amount=29900)
-    elif term == 3:
-        description = 'Премииум доступ на 3 месяца'
-        price = LabeledPrice(label='3 месяца премиума', amount=80000)
-    else:
-        description = 'Премииум доступ на 9 месяцев'
-        price = LabeledPrice(label='9 месяцев премиума', amount=250000)
-    invoice = Invoice(
-        provider_token=PAYMENTS_TOKEN,
-        currency=Currency.RUB,
-        prices=[price],
-        start_parameter='abstraction',
-        payload=f'{username}_premium_4_{term}_{user_id}',
-        title='Премиум в боте abstraction',
-        description=description
-    )
-    await bot.send_invoice(message.chat.id, invoice)
