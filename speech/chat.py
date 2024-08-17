@@ -69,6 +69,6 @@ def add_prompt(text):
         summary = summarize_text(chunk)
         summaries.append(summary)
 
-    final_summary = summarize_text(' '.join(summaries))
+    final_summary = ' '.join(summaries)
 
     return final_summary
