@@ -2,7 +2,6 @@ import asyncio
 import requests
 import logging
 from prompt import prompt as text_prompt
-from speech import threads
 from threads import ThreadWithReturnValue
 
 
