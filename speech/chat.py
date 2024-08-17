@@ -90,7 +90,11 @@ async def add_prompt(text):
     for i in range(num_chunks):
         chunk = text[i * 4096:(i + 1) * 4096]
         summaries.append(chunk)
+    stop_flag = False
     threads = await get_text(summaries)
+    stop_flag = True
+    while not stop_flag:
+        await asyncio.sleep(0.2)
 
     final_summary = ' '.join(threads)
 
