@@ -120,7 +120,7 @@ async def handle_pdf(
         final_file = await final_file_write(text, name)
         await bot.delete_message(message.chat.id, msg.message_id)
 
-        file = types.FSInputFile(final_file)
+        file = types.FSInputFile(final_file.encode('utf-8'))
 
         button = types.InlineKeyboardButton(
             text='В меню', callback_data='menu')

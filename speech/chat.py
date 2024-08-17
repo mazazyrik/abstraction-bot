@@ -1,6 +1,9 @@
+import asyncio
 import requests
 import logging
 from prompt import prompt as text_prompt
+from speech import threads
+from threads import ThreadWithReturnValue
 
 
 def summarize_text(text):
@@ -56,7 +59,28 @@ def summarize_text(text):
     return res
 
 
-def add_prompt(text):
+def get_text_thread(text):
+    logging.info('get_text_thread started')
+    thread = ThreadWithReturnValue(target=summarize_text, args=(text,))
+    thread.start()
+    return thread
+
+
+async def get_text(chunks):
+    loop = asyncio.get_event_loop()
+
+    threads = (
+        [
+            await loop.run_in_executor(
+                None, get_text_thread, chunk,
+            ) for chunk in chunks
+        ]
+    )
+
+    return threads
+
+
+async def add_prompt(text):
     logging.info('add_prompt started')
 
     text_len = len(text)
@@ -66,9 +90,9 @@ def add_prompt(text):
 
     for i in range(num_chunks):
         chunk = text[i * 4096:(i + 1) * 4096]
-        summary = summarize_text(chunk)
-        summaries.append(summary)
+        summaries.append(chunk)
+    threads = await get_text(summaries)
 
-    final_summary = ' '.join(summaries)
+    final_summary = ' '.join(threads)
 
     return final_summary
