@@ -12,7 +12,7 @@ from chat import add_prompt
 
 async def final_file_write(text, name):
     file_name = f'{name}_final.txt'
-    final_text = add_prompt(text)
+    final_text = await add_prompt(text)
 
     async with aiofiles.open(file_name, 'w') as f:
         await f.write(final_text)
