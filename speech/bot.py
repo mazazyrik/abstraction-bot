@@ -17,7 +17,6 @@ logging.basicConfig(
 async def main():
     bot = my_bot
     dp = Dispatcher()
-
     dp.include_routers(main_bot_funcs.router, service_funcs.router)
 
     await bot.delete_webhook(drop_pending_updates=True)

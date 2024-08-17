@@ -5,7 +5,7 @@ from peewee import (
 )
 
 db = PostgresqlDatabase('postgres', user='postgres', password='1234',
-                        host='192.168.0.204', port=5432)
+                        host='localhost', port=5432)
 
 
 class Guest(Model):

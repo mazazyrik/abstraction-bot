@@ -62,6 +62,7 @@ def add_prompt(text):
     text_len = len(text)
     num_chunks = -(-text_len // 4096)
     summaries = []
+    logging.info(f'number of chunks is {num_chunks}')
 
     for i in range(num_chunks):
         chunk = text[i * 4096:(i + 1) * 4096]
