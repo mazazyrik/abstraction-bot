@@ -96,6 +96,6 @@ async def add_prompt(text):
     while not stop_flag:
         await asyncio.sleep(0.2)
 
-    final_summary = ' '.join(threads)
+    final_summary = ' '.join(thread for thread in threads)
 
     return final_summary
