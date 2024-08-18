@@ -1,4 +1,3 @@
-import logging
 import os
 import aiofiles
 import PyPDF2
@@ -16,6 +15,7 @@ async def final_file_write(text, name: str):
 
     async with aiofiles.open(file_name, 'w') as f:
         await f.write(final_text)
+    f.encode('utf-8')
     return file_name
 
 
