@@ -1,9 +1,7 @@
 # flake8: noqa
-import logging
 from aiogram import types, F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from aiogram.enums.content_type import ContentType
 
 from db import Guest, UserAuth
 from chat import add_prompt

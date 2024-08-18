@@ -10,8 +10,8 @@ from constants import bot
 from chat import add_prompt
 
 
-async def final_file_write(text, name):
-    file_name = f'{name}_final.txt'
+async def final_file_write(text, name: str):
+    file_name = f"{name}_final.txt"
     final_text = await add_prompt(text)
 
     async with aiofiles.open(file_name, 'w') as f:

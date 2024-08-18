@@ -59,7 +59,6 @@ def summarize_text(text):
 
 
 def get_text_thread(text):
-    logging.info('get_text_thread started')
     thread = ThreadWithReturnValue(target=summarize_text, args=(text,))
     thread.start()
     return thread
@@ -83,7 +82,7 @@ async def add_prompt(text):
     logging.info('add_prompt started')
 
     text_len = len(text)
-    num_chunks = -(-text_len // 4096)  # Округление вверх
+    num_chunks = -(-text_len // 4096)
     summaries = []
     logging.info(f'number of chunks is {num_chunks}')
 
@@ -91,13 +90,11 @@ async def add_prompt(text):
         chunk = text[i * 4096:(i + 1) * 4096]
         summaries.append(chunk)
 
-    # Предполагаем, что get_text возвращает список потоков
     threads = await get_text(summaries)
 
-    # Извлечение результатов из потоков
     final_summaries = []
     for thread in threads:
-        result = thread.join()  # Получаем результат из потока
+        result = thread.join()
         final_summaries.append(result)
 
     final_summary = ' '.join(final_summaries)
