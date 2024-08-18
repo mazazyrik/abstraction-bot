@@ -97,7 +97,8 @@ async def add_prompt(text):
     # Извлечение результатов из потоков
     final_summaries = []
     for thread in threads:
-        final_summaries.append(thread.result())  # Получаем результат из потока
+        result = thread.join()  # Получаем результат из потока
+        final_summaries.append(result)
 
     final_summary = ' '.join(final_summaries)
 
