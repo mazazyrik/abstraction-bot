@@ -83,19 +83,22 @@ async def add_prompt(text):
     logging.info('add_prompt started')
 
     text_len = len(text)
-    num_chunks = -(-text_len // 4096)
+    num_chunks = -(-text_len // 4096)  # Округление вверх
     summaries = []
     logging.info(f'number of chunks is {num_chunks}')
 
     for i in range(num_chunks):
         chunk = text[i * 4096:(i + 1) * 4096]
         summaries.append(chunk)
-    stop_flag = False
-    threads = await get_text(summaries)
-    stop_flag = True
-    while not stop_flag:
-        await asyncio.sleep(0.2)
 
-    final_summary = ' '.join(thread for thread in threads)
+    # Предполагаем, что get_text возвращает список потоков
+    threads = await get_text(summaries)
+
+    # Извлечение результатов из потоков
+    final_summaries = []
+    for thread in threads:
+        final_summaries.append(thread.result())  # Получаем результат из потока
+
+    final_summary = ' '.join(final_summaries)
 
     return final_summary
