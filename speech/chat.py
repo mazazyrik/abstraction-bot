@@ -81,6 +81,9 @@ async def get_text(chunks):
 async def add_prompt(text):
     logging.info('add_prompt started')
 
+    if isinstance(text, str):
+        text = text.encode('utf-8').decode('utf-8')
+
     text_len = len(text)
     num_chunks = -(-text_len // 4096)
     summaries = []
