@@ -115,12 +115,12 @@ async def handle_pdf(
         reader = PyPDF2.PdfReader(f'{name}.pdf')
         text = ''
         for page in reader.pages:
-            text += page.extract_text().encode('utf-8').decode('utf-8')
+            text += page.extract_text()
 
         final_file = await final_file_write(text, name)
         await bot.delete_message(message.chat.id, msg.message_id)
 
-        file = types.FSInputFile(final_file.encode('utf-8'))
+        file = types.FSInputFile(final_file)
 
         button = types.InlineKeyboardButton(
             text='В меню', callback_data='menu')
