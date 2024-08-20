@@ -12,6 +12,8 @@ from util_tools.utils import (
 )
 
 router = Router()
+
+
 @router.callback_query(F.data == 'admin')
 async def admin(callback=types.CallbackQuery):
     user_id = callback.from_user.id
@@ -31,16 +33,6 @@ async def admin(callback=types.CallbackQuery):
         )
     else:
         await callback.answer("Ты не админ")
-
-
-@router.callback_query(F.data == 'voice')
-async def voice(callback: types.CallbackQuery, state: FSMContext):
-    await state.set_state(Voice.voice)
-    await callback.message.answer(
-        f'Отправь голосовое сообщение или мп3 файл.\n\n'
-        'Если у тебя айфон, то ты можешь '
-        'поделиться записью с диктофона и отправить боту.'
-    )
 
 
 @router.callback_query(F.data == 'give_premium')

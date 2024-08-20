@@ -2,21 +2,27 @@
 import os
 import datetime
 import logging
+import yookassa
+import uuid
 
 from aiogram import types
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.exceptions import TelegramBadRequest
+from yookassa import Payment
 
 from pathlib import Path
 
 from main_speech import main as speech_main
 from threads import ThreadWithReturnValue
 from chat import add_prompt
-from constants import MY_CHAT_ID, PAYMENTS_TOKEN, bot
+from constants import MY_CHAT_ID, PAYMENTS_TOKEN, PAYMENT_ID, bot
 from db import UserAuth, Guest
 from util_tools.file_handler import handle_file as file_handle
 from util_tools.file_handler import final_file_write, handle_pdf
+
+yookassa.Configuration.secret_key = PAYMENTS_TOKEN
+yookassa.Configuration.account_id = PAYMENT_ID
 
 
 class Text(StatesGroup):
@@ -125,7 +131,7 @@ def delete_premium(user_id):
 
 
 def user_expiry_date(term):
-    return datetime.datetime.now() + datetime.timedelta(days=30 * term)
+    return datetime.datetime.now() + datetime.timedelta(days=30 * int(term))
 
 
 def check_premium(user_id):
@@ -206,24 +212,58 @@ async def text_util(message, message_text):
     await message.answer(ans, reply_markup=keyboard.adjust(1).as_markup())
 
 
-async def premium_for_payment(username, user_id, term, message):
+def premium_for_payment(username, user_id, term, message):
     if term == 1:
-        description = 'Премииум доступ на 1 месяц'
-        PRICE = types.LabeledPrice(label='1 месяц премиума', amount=29900)
+        description = 'Премиум доступ на 1 месяц'
+        PRICE = 299
     elif term == 3:
-        description = 'Премииум доступ на 3 месяца'
-        PRICE = types.LabeledPrice(label='1 месяц премиума', amount=80000)
+        description = 'Премиум доступ на 3 месяца'
+        PRICE = 800
     else:
-        description = 'Премииум доступ на 9 месяцев'
-        PRICE = types.LabeledPrice(label='1 месяц премиума', amount=250000)
-    await bot.send_invoice(
-        message.chat.id,
-        title='Премиум в боте abstraction',
-        description=description,
-        provider_token=PAYMENTS_TOKEN,
-        currency='rub',
-        is_flexible=False,
-        prices=[PRICE],
-        start_parameter='abstration',
-        payload=f'{username}_premium_4_{term}_{user_id}'
-    )
+        description = 'Премиум доступ на 9 месяцев'
+        PRICE = 2500
+    id_key = str(uuid.uuid4())
+    customer_email = 'mazazyrik@yandex.ru'
+
+    payment = Payment.create({
+        'amount': {
+            'value': PRICE,
+            'currency': 'RUB',
+        },
+        'confirmation': {
+            'type': 'redirect',
+            'return_url': 'https://t.me/abstraction_premium_bot',
+        },
+        'metadata': {
+            'username': username,
+            'user_id': user_id,
+            'term': term
+        },
+        'receipt': {
+            'customer': {
+                'email': customer_email,
+            },
+            'items': [
+                {
+                    'description': f'{description} для пользователя @{username}',
+                    'quantity': 1,
+                    'amount': {
+                        'value': PRICE,
+                        'currency': 'RUB',
+                    },
+                    "vat_code": 1,
+                    "payment_mode": "full_prepayment",
+                    "payment_subject": "commodity"
+                },
+            ],
+        },
+        'description': description
+    }, id_key)
+
+    return payment.confirmation.confirmation_url, payment.id
+
+
+def check_payment(payment_id):
+    Payment.capture(payment_id)
+    payment = yookassa.Payment.find_one(payment_id)
+    return payment

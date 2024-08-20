@@ -17,6 +17,15 @@ from constants import MY_CHAT_ID, bot
 router = Router()
 
 
+@router.callback_query(F.data == 'voice')
+async def voice(callback: types.CallbackQuery, state: FSMContext):
+    await state.set_state(Voice.voice)
+    await callback.message.answer(
+        f'Отправь голосовое сообщение или мп3 файл.\n\n'
+        'Если у тебя айфон, то ты можешь '
+        'поделиться записью с диктофона и отправить боту.'
+    )
+
 @router.message(Voice.voice, F.content_type.in_({'audio', 'voice'}))
 async def voice_message_handler(message: types.Message, state: FSMContext):
     await state.clear()
