@@ -1,32 +1,17 @@
 import asyncio
-import requests
+import aiohttp
 import logging
-from prompt import prompt as text_prompt
-from threads import ThreadWithReturnValue
 
 
-def summarize_text(text):
+async def start_async_operation(text):
     prompt = {
-        "modelUri": "gpt://b1g9b4dhssf7u0rot67t/yandexgpt-lite",
+        "modelUri": "gpt://b1g9b4dhssf7u0rot67t/yandexgpt/latest",
         "completionOptions": {
-            "stream": False,
+            "stream": True,
             "temperature": 0.6,
-            "maxTokens": "2000"
+            "maxTokens": 2000
         },
         "messages": [
-            {
-                "role": "system",
-                "text": ("Ты ассистент который помогает "
-                         "пользователям в написании конспектов.")
-            },
-            {
-                "role": "user",
-                "text": text_prompt
-            },
-            {
-                "role": "assistant",
-                "text": 'Хорошо я поняла. Ожидаю вводный текст'
-            },
             {
                 "role": "user",
                 "text": text
@@ -34,48 +19,40 @@ def summarize_text(text):
         ]
     }
 
-    url = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
+    url = "https://llm.api.cloud.yandex.net/foundationModels/v1/completionAsync"
     headers = {
         "Content-Type": "application/json",
         "Authorization": "Api-Key AQVN2CNjLpFAwtwCIGbnhuOOegcF9Ac557YZBSmR"
     }
 
-    response = requests.post(url, headers=headers, json=prompt)
-    result_json = response.json()
-
-    try:
-        res = result_json.get('result').get('alternatives')[
-            0].get('message').get('text')
-    except (AttributeError, IndexError):
-        res = (
-            'Нейросеть не смогла расшифровать этот текст. '
-            'Попробуйте ещё раз.\n\n'
-            'Если вы делали разбор файла, то проверьте не состоит ли '
-            'он из картинок.\n\n'
-            'Если вы делали разбор аудио, то проверьте не '
-            'состоит ли он из тишины.'
-        )
-    return res
+    async with aiohttp.ClientSession() as session:
+        for attempt in range(5):  # Максимум 5 попыток
+            async with session.post(url, headers=headers, json=prompt) as response:
+                if response.status == 429:
+                    # Экспоненциальная задержка
+                    await asyncio.sleep(2 ** attempt)
+                    continue  # Повторить попытку
+                response.raise_for_status()
+                result_json = await response.json()
+                return result_json.get('id')
+    raise Exception("Exceeded maximum retries for start_async_operation")
 
 
-def get_text_thread(text):
-    thread = ThreadWithReturnValue(target=summarize_text, args=(text,))
-    thread.start()
-    return thread
+async def summarize_text(text):
+    # Ваша логика для обработки текста
+    return await start_async_operation(text)
 
 
 async def get_text(chunks):
-    loop = asyncio.get_event_loop()
+    sem = asyncio.Semaphore(5)  # Ограничение на 5 параллельных запросов
 
-    threads = (
-        [
-            await loop.run_in_executor(
-                None, get_text_thread, chunk,
-            ) for chunk in chunks
-        ]
-    )
+    async def sem_task(chunk):
+        async with sem:
+            return await summarize_text(chunk)
 
-    return threads
+    tasks = [asyncio.create_task(sem_task(chunk)) for chunk in chunks]
+    results = await asyncio.gather(*tasks)
+    return results
 
 
 async def add_prompt(text):
@@ -85,21 +62,15 @@ async def add_prompt(text):
         text = text.encode('utf-8').decode('utf-8')
 
     text_len = len(text)
-    num_chunks = -(-text_len // 4096)
+    num_chunks = -(-text_len // 10_000)
     summaries = []
     logging.info(f'number of chunks is {num_chunks}')
 
     for i in range(num_chunks):
-        chunk = text[i * 4096:(i + 1) * 4096]
+        chunk = text[i * 10_000:(i + 1) * 10_000]
         summaries.append(chunk)
 
     threads = await get_text(summaries)
-
-    final_summaries = []
-    for thread in threads:
-        result = thread.join()
-        final_summaries.append(result)
-
-    final_summary = ' '.join(final_summaries)
+    final_summary = ' '.join(threads)
 
     return final_summary
