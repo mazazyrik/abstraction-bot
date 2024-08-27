@@ -1,38 +1,43 @@
-import asyncio
-from concurrent.futures import ProcessPoolExecutor
+import logging
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from prompt import prompt as base_prompt
 
+# Убедитесь, что у вас есть доступ к GPU, если он доступен
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+# Загрузка модели и токенизатора для русского языка
 model_name = "sberbank-ai/rugpt3large_based_on_gpt2"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
 
 
-def generate_text(prompt):
-    inputs = tokenizer(
-        base_prompt + prompt,
-        return_tensors="pt",
-        truncation=True,
-        padding=True
-    ).to(device)
-    outputs = model.generate(**inputs, max_length=10_000)
+def generate_text(prompt, max_length=2000):
+    inputs = tokenizer.encode(prompt, return_tensors='pt').to(device)
+    outputs = model.generate(inputs, max_length=max_length,
+                             num_return_sequences=1)
     return tokenizer.decode(outputs[0], skip_special_tokens=True)
 
 
-async def add_prompt(prompts):
-    loop = asyncio.get_event_loop()
+def add_prompt(text):
+    logging.info('add_prompt started')
+
+    prompt = (
+        "Ты ассистент который помогает пользователям в написании конспектов.\n"
+        "Хорошо я поняла. Ожидаю вводный текст\n"
+    )
+
+    text_len = len(text)
+    num_chunks = -(-text_len // 2000)  # Округление вверх
     results = []
 
-    with ProcessPoolExecutor() as executor:
-        futures = [
-            loop.run_in_executor(executor, generate_text, prompt)
-            for prompt in prompts
-        ]
+    for i in range(num_chunks):
+        chunk = text[i * 2000:(i + 1) * 2000]
+        full_prompt = prompt + chunk
+        result = generate_text(full_prompt)
+        results.append(result)
 
-        for response in await asyncio.gather(*futures):
-            results.append(response)
+    # Объединение результатов
+    final_result = "\n".join(results)
+    return final_result
 
-    return results
+add_prompt('test')
