@@ -70,7 +70,7 @@ async def add_prompt(text):
 
     for i in range(num_chunks):
         chunk = text[i * 4096:(i + 1) * 4096]
-        prompt_copy = prompt.copy() 
+        prompt_copy = prompt.copy()
         prompt_copy['messages'].append(
             {
                 "role": "user",
@@ -83,4 +83,4 @@ async def add_prompt(text):
         tasks = [send_request(session, p) for p in prompts]
         results = await asyncio.gather(*tasks)
 
-    return results
+    return '/n'.join(results)
