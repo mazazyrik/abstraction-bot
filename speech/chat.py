@@ -44,8 +44,6 @@ async def add_prompt(text):
         "modelUri": "gpt://b1g9b4dhssf7u0rot67t/yandexgpt-lite",
         "completionOptions": {
             "stream": False,
-            "temperature": 0.6,
-            "maxTokens": 2000
         },
         "messages": [
             {
@@ -65,11 +63,11 @@ async def add_prompt(text):
     }
 
     text_len = len(text)
-    num_chunks = -(-text_len // 4096)
+    num_chunks = -(-text_len // 10_000)
     prompts = []
 
     for i in range(num_chunks):
-        chunk = text[i * 4096:(i + 1) * 4096]
+        chunk = text[i * 10_000:(i + 1) * 10_000]
         prompt_copy = prompt.copy()
         prompt_copy['messages'].append(
             {
