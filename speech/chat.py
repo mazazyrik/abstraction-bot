@@ -1,7 +1,7 @@
 import logging
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
-
+from test import txt
 # Убедитесь, что у вас есть доступ к GPU, если он доступен
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -41,4 +41,4 @@ def add_prompt(text):
     return final_result
 
 
-print(add_prompt('привет как дела'))
+print(add_prompt(txt))
