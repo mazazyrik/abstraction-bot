@@ -5,10 +5,10 @@ import json
 
 
 async def send_request(session, prompt):
-    url = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
+    url = 'https://300.ya.ru/api/sharing-url'
     headers = {
-        "Content-Type": "application/json",
-        "Authorization": "Api-Key AQVN2CNjLpFAwtwCIGbnhuOOegcF9Ac557YZBSmR"
+        # "Content-Type": "application/json",
+        'Authorization': 'OAuth y0_AgAAAABYuub4AAoX4wAAAAEPLLlYAAC2U7V0IuRI-51UzcHKb09sWTD3Qg'
     }
 
     while True:
@@ -41,25 +41,7 @@ async def add_prompt(text):
     logging.info('add_prompt started')
 
     prompt = {
-        "modelUri": "gpt://b1g9b4dhssf7u0rot67t/yandexgpt-lite",
-        "completionOptions": {
-            "stream": False,
-        },
-        "messages": [
-            {
-                "role": "system",
-                "text": ("Ты ассистент который помогает "
-                         "пользователям в написании конспектов.")
-            },
-            {
-                "role": "user",
-                "text": text
-            },
-            {
-                "role": "assistant",
-                "text": 'Хорошо я поняла. Ожидаю вводный текст'
-            },
-        ]
+        'article_url': ''
     }
 
     text_len = len(text)
@@ -68,14 +50,8 @@ async def add_prompt(text):
 
     for i in range(num_chunks):
         chunk = text[i * 10_000:(i + 1) * 10_000]
-        prompt_copy = prompt.copy()
-        prompt_copy['messages'].append(
-            {
-                "role": "user",
-                "text": chunk
-            }
-        )
-        prompts.append(prompt_copy)
+        prompt['text'] = chunk
+        prompts.append(prompt)
 
     async with aiohttp.ClientSession() as session:
         tasks = [send_request(session, p) for p in prompts]
