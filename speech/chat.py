@@ -41,4 +41,4 @@ def add_prompt(text):
     return final_result
 
 
-add_prompt('test')
+print(add_prompt('привет как дела'))
