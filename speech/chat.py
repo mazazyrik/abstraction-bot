@@ -1,73 +1,54 @@
 import logging
-import requests
-import json
-from prompt import prompt as text_prompt
+import asyncio
+from prompt import prompt as base_prompt
+from yandex_gpt import YandexGPT, YandexGPTConfigManagerForAPIKey
+
+config = YandexGPTConfigManagerForAPIKey(
+    model_type="yandexgpt-lite",
+    catalog_id="b1g9b4dhssf7u0rot67t",
+    api_key="AQVN2CNjLpFAwtwCIGbnhuOOegcF9Ac557YZBSmR"
+)
+
+yandex_gpt = YandexGPT(config_manager=config)
 
 
-def add_prompt(text):
-    logging.info('add_prompt started')
+async def get_completion(text):
+    msg = [{"role": "user", "text": base_prompt + text}]
 
-    prompt = {
-        "modelUri": "gpt://b1g9b4dhssf7u0rot67t/yandexgpt-lite",
-        "completionOptions": {
-            "stream": False,
-            "temperature": 0.6,
-            "maxTokens": "2000"
-        },
-        "messages": [
-            {
-                "role": "system",
-                "text": ("Ты ассистент который помогает "
-                         "пользователям в написании конспектов."
-                         )
-            },
-            {
-                "role": "user",
-                "text": text_prompt
-            },
-            {
-                "role": "assistant",
-                "text": 'Хорошо я поняла. Ожидаю вводный текст'
-            },
+    while True:
+        try:
+            completion = await yandex_gpt.get_async_completion(
+                messages=msg, timeout=300, max_tokens=2000
+            )
+            logging.info('Chunk completed successfully.')
+            return completion
+        except Exception as e:
+            if "429" in str(e):
+                logging.warning(
+                    "Received 429 error. Retrying in 15 seconds...")
+                await asyncio.sleep(15)
+            else:
+                logging.error(f"Error in get_completion: {e}")
+                return None
 
-        ]
-    }
-    text_len = len(text)
-    num_chunks = -(-text_len // 4096)
-    for i in range(num_chunks):
-        chunk = text[i * 4096:(i + 1) * 4096]
-        prompt['messages'].append(
-            {
-                "role": "user",
-                "text": chunk
-            }
-        )
 
-    url = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": "Api-Key AQVN2CNjLpFAwtwCIGbnhuOOegcF9Ac557YZBSmR"
-    }
-    response = requests.post(url, headers=headers, json=prompt)
-    result = response.text
-    result_json = json.loads(result)
-    try:
-        res = result_json.get(
-            'result'
-        ).get(
-            'alternatives'
-        )[0].get(
-            'message'
-        ).get(
-            'text'
-        )
-    except AttributeError:
-        res = (
-            'Нейросеть не смогла расшифровать этот текст. '
-            f'Попробуйте ещё раз.\n\n'
-            'Если вы делали разбор файла, то проверьте не состоит ли '
-            f'он из картинок.\n\n'
-            'Если вы делали разбор аудио, то проверьте не '
-            'состоит ли он из тишины.'
-        )
-    return res
+def slice_to_chunks(text):
+    return [text[i:i + 5000] for i in range(0, len(text), 5000)]
+
+
+async def get_text(chunks):
+    results = []
+
+    for i in range(0, len(chunks), 5):
+        batch = chunks[i:i + 5]
+        results.extend(await asyncio.gather(
+            *(get_completion(chunk) for chunk in batch)
+        ))
+
+    return results
+
+
+async def add_prompt(text):
+    chunks = slice_to_chunks(text)
+    full_text = await get_text(chunks)
+    return f'\n'.join(full_text)
