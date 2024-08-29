@@ -215,13 +215,13 @@ async def text_util(message, message_text):
 def premium_for_payment(username, user_id, term, message):
     if term == 1:
         description = 'Премиум доступ на 1 месяц'
-        PRICE = 299
+        PRICE = 399
     elif term == 3:
         description = 'Премиум доступ на 3 месяца'
-        PRICE = 800
+        PRICE = 999
     else:
         description = 'Премиум доступ на 9 месяцев'
-        PRICE = 2500
+        PRICE = 3399
     id_key = str(uuid.uuid4())
     customer_email = 'mazazyrik@yandex.ru'
 
