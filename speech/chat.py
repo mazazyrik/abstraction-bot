@@ -1,60 +1,54 @@
 import logging
-import aiohttp
 import asyncio
-import json
+from prompt import prompt as base_prompt
+from yandex_gpt import YandexGPT, YandexGPTConfigManagerForAPIKey
+
+config = YandexGPTConfigManagerForAPIKey(
+    model_type="yandexgpt-lite",
+    catalog_id="b1g9b4dhssf7u0rot67t",
+    api_key="AQVN2CNjLpFAwtwCIGbnhuOOegcF9Ac557YZBSmR"
+)
+
+yandex_gpt = YandexGPT(config_manager=config)
 
 
-async def send_request(session, prompt):
-    url = 'https://300.ya.ru/api/sharing-url'
-    headers = {
-        # "Content-Type": "application/json",
-        'Authorization': 'OAuth y0_AgAAAABYuub4AAoX4wAAAAEPLLlYAAC2U7V0IuRI-51UzcHKb09sWTD3Qg'
-    }
+async def get_completion(text):
+    msg = [{"role": "user", "text": base_prompt + text}]
 
     while True:
-        async with session.post(url, headers=headers, json=prompt) as response:
-            if response.status == 429:
+        try:
+            completion = await yandex_gpt.get_async_completion(
+                messages=msg, timeout=300, max_tokens=2000
+            )
+            logging.info('Chunk completed successfully.')
+            return completion
+        except Exception as e:
+            if "429" in str(e):
                 logging.warning(
-                    'Received 429 Too Many Requests. Retrying after delay...')
-                await asyncio.sleep(5)  # Задержка перед повторной попыткой
-                continue
+                    "Received 429 error. Retrying in 15 seconds...")
+                await asyncio.sleep(15)
+            else:
+                logging.error(f"Error in get_completion: {e}")
+                return None
 
-            result = await response.text()
-            result_json = json.loads(result)
 
-            try:
-                res = result_json.get('result').get('alternatives')[
-                    0].get('message').get('text')
-                return res  # Возвращаем результат
-            except (AttributeError, IndexError):
-                return (
-                    'Нейросеть не смогла расшифровать этот текст. '
-                    'Попробуйте ещё раз.\n\n'
-                    'Если вы делали разбор файла, то проверьте не состоит ли '
-                    'он из картинок.\n\n'
-                    'Если вы делали разбор аудио, то проверьте не '
-                    'состоит ли он из тишины.'
-                )
+def slice_to_chunks(text):
+    return [text[i:i + 5000] for i in range(0, len(text), 5000)]
+
+
+async def get_text(chunks):
+    results = []
+
+    for i in range(0, len(chunks), 5):
+        batch = chunks[i:i + 5]
+        results.extend(await asyncio.gather(
+            *(get_completion(chunk) for chunk in batch)
+        ))
+
+    return results
 
 
 async def add_prompt(text):
-    logging.info('add_prompt started')
-
-    prompt = {
-        'article_url': ''
-    }
-
-    text_len = len(text)
-    num_chunks = -(-text_len // 10_000)
-    prompts = []
-
-    for i in range(num_chunks):
-        chunk = text[i * 10_000:(i + 1) * 10_000]
-        prompt['text'] = chunk
-        prompts.append(prompt)
-
-    async with aiohttp.ClientSession() as session:
-        tasks = [send_request(session, p) for p in prompts]
-        results = await asyncio.gather(*tasks)
-
-    return '/n'.join(results)
+    chunks = slice_to_chunks(text)
+    full_text = await get_text(chunks)
+    return f'\n'.join(full_text)
