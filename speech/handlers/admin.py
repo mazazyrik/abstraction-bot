@@ -1,14 +1,11 @@
-# flake8: noqa
 from aiogram import types, F, Router
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from aiogram.fsm.context import FSMContext
 
 
 from constants import MY_CHAT_ID, bot
 from db import UserAuth
 from util_tools.utils import (
     user_expiry_date,
-    Voice,
 )
 
 router = Router()
@@ -66,12 +63,12 @@ async def give_premium(callback: types.CallbackQuery):
         keyboard = InlineKeyboardBuilder()
 
         keyboard.add(*kb)
-        await callback.message.answer(f'Премиум выдан!\N{green heart}',
+        await callback.message.answer('Премиум выдан!\N{green heart}',
                                       reply_markup=(
                                           keyboard.adjust(1).as_markup()
                                       ))
         await bot.send_message(
-            int(user_id), f'Вы получили премиум!\N{green heart}',
+            int(user_id), 'Вы получили премиум!\N{green heart}',
             reply_markup=keyboard.adjust(1).as_markup()
         )
 
@@ -105,7 +102,8 @@ async def del_premium(callback: types.CallbackQuery):
                                       reply_markup=(
                                           keyboard.adjust(1).as_markup()
                                       ))
-        await bot.send_message(int(user_id), f'У вас больше нет премиума!\N{broken heart}',
+        await bot.send_message(int(user_id),
+                               'У вас больше нет премиума!\N{broken heart}',
                                reply_markup=(
             keyboard.adjust(1).as_markup()
         ))

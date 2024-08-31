@@ -1,4 +1,3 @@
-# flake8: noqa
 import os
 import datetime
 import logging
@@ -76,7 +75,8 @@ async def premium_requests(username, user_id, duration):
 
     keyboard.add(*kb)
     await bot.send_message(
-        MY_CHAT_ID, f'Пользователь {username}, запросил премиум! {user_id}, {duration}',
+        MY_CHAT_ID,
+        f'Пользователь {username}, запросил премиум! {user_id}, {duration}',
         reply_markup=keyboard.adjust(1).as_markup()
     )
 
@@ -98,7 +98,7 @@ async def main_speech_func(message, name, msg):
     keyboard.add(button)
     await bot.send_message(
         message.chat.id,
-        f'Готово!\N{smiling face with sunglasses}\n\n'
+        'Готово!\N{smiling face with sunglasses}\n\n'
         'Ниже - твой коснпект.',
     )
     await bot.send_document(
@@ -173,7 +173,7 @@ async def bot_get_file(file_id, message):
         return file
     except TelegramBadRequest:
         await message.reply(
-            f'Файл слишком большой.\n\n'
+            'Файл слишком большой.\n\n'
             'Пожалуйста, загрузи файл на сайт http://abstraction.sytes.net '
             'скопируй название файла и нажми кнопку "Загрузил".',
             reply_markup=keyboard.adjust(1).as_markup()
@@ -245,7 +245,9 @@ def premium_for_payment(username, user_id, term, message):
             },
             'items': [
                 {
-                    'description': f'{description} для пользователя @{username}',
+                    'description': (
+                        f'{description} для пользователя @{username}'
+                    ),
                     'quantity': 1,
                     'amount': {
                         'value': PRICE,

@@ -1,4 +1,3 @@
-# flake8: noqa
 from aiogram import types, F, Router
 from aiogram.fsm.context import FSMContext
 
@@ -17,7 +16,7 @@ router = Router()
 async def text_file(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(File.file)
     await callback.message.answer(
-        f'Отправь мне файл для создания коспекта.\n\n'
+        'Отправь мне файл для создания коспекта.\n\n'
         'Файлы принимаются только с расширениями .txt и .pdf'
     )
 

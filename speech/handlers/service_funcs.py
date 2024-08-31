@@ -1,6 +1,4 @@
-# flake8: noqa
 import logging
-import os
 
 from aiogram import types, F, Router
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -92,20 +90,22 @@ async def cmd_start(message: types.Message):
         keyboard = InlineKeyboardBuilder()
         keyboard.add(*kb)
         await message.answer(
-            f'Привет, {name}! \N{raised hand} \n'
-            f'Добро пожаловать в бота Abstraction\N{TRADE MARK SIGN}.\n'
-            f'\nПрошу тебя ознакомиться '
-            f'с возможностями бота и перейти в меню. \N{TRIANGULAR FLAG ON POST}\n'
-            f'\nПЕРВЫЙ КОНСПЕКТ БЕСПЛАТНО \N{money-mouth face}.\n'
-            f'\nБот умеет:\n'
-            f'\N{DIGIT ONE}. '
-            f' Делать конспекты из голосовых сообщений\n'
-            f'\N{DIGIT TWO}. '
-            f' Писать конспекты из сообщений\n'
-            f'\N{DIGIT THREE}. '
-            f' Писать конспекты из файлов файлов\n'
-            f'\nТакже, если ты нашел баг или хочешь предложить новую фишку - напиши @mazwork1'
-            f'\N{smiling face with sunglasses}',
+            'Привет, {name}! \N{raised hand} \n'
+            'Добро пожаловать в бота Abstraction\N{TRADE MARK SIGN}.\n'
+            '\nПрошу тебя ознакомиться '
+            'с возможностями бота и перейти в меню. '
+            '\N{TRIANGULAR FLAG ON POST}\n'
+            '\nПЕРВЫЙ КОНСПЕКТ БЕСПЛАТНО \N{money-mouth face}.\n'
+            '\nБот умеет:\n'
+            '\N{DIGIT ONE}. '
+            ' Делать конспекты из голосовых сообщений\n'
+            '\N{DIGIT TWO}. '
+            ' Писать конспекты из сообщений\n'
+            '\N{DIGIT THREE}. '
+            ' Писать конспекты из файлов файлов\n'
+            '\nТакже, если ты нашел баг или хочешь предложить новую фишку - '
+            'напиши @abstractionsupport'
+            '\N{smiling face with sunglasses}',
             reply_markup=keyboard.adjust(1).as_markup()
         )
 
@@ -152,7 +152,9 @@ async def cmd_try(callback: types.CallbackQuery, state: FSMContext):
 @router.callback_query(F.data == 'loaded')
 async def loaded(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(FileName.name)
-    await callback.message.edit_text('Отлично! Вставь название файла и жди конспект!')
+    await callback.message.edit_text(
+        'Отлично! Вставь название файла и жди конспект!'
+    )
 
 
 @router.message(FileName.name)
@@ -160,7 +162,7 @@ async def download_file(message: types.Message, state: FSMContext):
     name = message.text
     await state.clear()
     await message.reply(
-        f'Загрузка...\n\n'
+        'Загрузка...\n\n'
         'Длинные аудиозаписи могут долго'
         ' обрабатываться из-за высокой нагрузки.'
     )

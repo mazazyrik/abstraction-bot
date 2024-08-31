@@ -41,9 +41,11 @@ async def get_text(chunks):
 
     for i in range(0, len(chunks), 5):
         batch = chunks[i:i + 5]
-        results.extend(await asyncio.gather(
+        batch_results = await asyncio.gather(
             *(get_completion(chunk) for chunk in batch)
-        ))
+        )
+
+        results.extend(filter(None, batch_results))
 
     return results
 
@@ -51,4 +53,8 @@ async def get_text(chunks):
 async def add_prompt(text):
     chunks = slice_to_chunks(text)
     full_text = await get_text(chunks)
-    return f'\n'.join(full_text)
+
+    if not full_text:
+        return "No valid responses received."
+
+    return '\n'.join(full_text)
