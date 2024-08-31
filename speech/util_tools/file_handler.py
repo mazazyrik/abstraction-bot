@@ -13,7 +13,7 @@ async def final_file_write(text, name: str):
     file_name = f"{name}_final.txt"
     final_text = await add_prompt(text)
 
-    async with aiofiles.open(file_name, 'w', encoding='utf-8') as f:
+    async with aiofiles.open(file_name, 'w') as f:
         await f.write(final_text)
     return file_name
 
