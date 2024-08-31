@@ -55,6 +55,6 @@ async def add_prompt(text):
     full_text = await get_text(chunks)
 
     if not full_text:
-        return "No valid responses received."
+        return "ошибка"
 
-    return '\n'.join(full_text)
+    return ' '.join(full_text)

@@ -9,12 +9,19 @@ from constants import bot
 from chat import add_prompt
 
 
+import aiofiles
+
+
 async def final_file_write(text, name: str):
-    file_name = f"{name}_final.txt"
+    file_name = f"{name}_final.md"
     final_text = await add_prompt(text)
+
+    if isinstance(final_text, str):
+        final_text = final_text.encode('utf-8').decode('utf-8')
 
     async with aiofiles.open(file_name, 'w', encoding='utf-8') as f:
         await f.write(final_text)
+
     return file_name
 
 
@@ -41,15 +48,19 @@ async def handle_file(
 
         button = types.InlineKeyboardButton(
             text='В меню', callback_data='menu')
+        button2 = types.InlineKeyboardButton(
+            text='Еще один файл', callback_data='text_file'
+        )
         keyboard = InlineKeyboardBuilder()
         keyboard.add(button)
+        keyboard.add(button2)
 
         await bot.send_document(
             message.chat.id, file, reply_markup=keyboard.adjust(
                 1).as_markup()
         )
         os.remove(f"{name}.txt")
-        os.remove(f"{name}_final.txt")
+        os.remove(f"{name}_final.md")
     except FileExistsError:
         await message.reply(
             "Вы не можете отправить новый запрос, "
@@ -69,14 +80,18 @@ async def handle_pdf_or_txt_server(file, message, name):
 
         button = types.InlineKeyboardButton(
             text='В меню', callback_data='menu')
+        button2 = types.InlineKeyboardButton(
+            text='Еще один файл', callback_data='text_file'
+        )
         keyboard = InlineKeyboardBuilder()
         keyboard.add(button)
+        keyboard.add(button2)
 
         await bot.send_document(
             message.chat.id, file, reply_markup=keyboard.adjust(
                 1).as_markup()
         )
-        os.remove(f"{name}_final.txt")
+        os.remove(f"{name}_final.md")
         os.remove(f'uploaded_files/{name}')
 
     elif file.endswith('.pdf'):
@@ -94,14 +109,18 @@ async def handle_pdf_or_txt_server(file, message, name):
 
         button = types.InlineKeyboardButton(
             text='В меню', callback_data='menu')
+        button2 = types.InlineKeyboardButton(
+            text='Еще один файл', callback_data='text_file'
+        )
         keyboard = InlineKeyboardBuilder()
         keyboard.add(button)
+        keyboard.add(button2)
 
         await bot.send_document(
             message.chat.id, file, reply_markup=keyboard.adjust(
                 1).as_markup()
         )
-        os.remove(f"{name}_final.txt")
+        os.remove(f"{name}_final.md")
         os.remove(f'uploaded_files/{name}')
 
 
@@ -131,15 +150,19 @@ async def handle_pdf(
 
         button = types.InlineKeyboardButton(
             text='В меню', callback_data='menu')
+        button2 = types.InlineKeyboardButton(
+            text='Еще один файл', callback_data='text_file'
+        )
         keyboard = InlineKeyboardBuilder()
         keyboard.add(button)
+        keyboard.add(button2)
 
         await bot.send_document(
             message.chat.id, file, reply_markup=keyboard.adjust(
                 1).as_markup()
         )
         os.remove(f"{name}.pdf")
-        os.remove(f"{name}_final.txt")
+        os.remove(f"{name}_final.md")
     except FileExistsError:
         await message.reply(
             "Вы не можете отправить новый запрос, "
