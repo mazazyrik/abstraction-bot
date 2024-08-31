@@ -105,7 +105,7 @@ async def main_speech_func(message, name, msg):
         message.chat.id, file, reply_markup=keyboard.adjust(
             1).as_markup()
     )
-    os.remove(f"{name}_final.txt")
+    os.remove(f"{name}_final.md")
 
 
 async def del_premium_request(username, user_id):
