@@ -26,7 +26,11 @@ async def handle_file(
 ):
     try:
         await bot.download_file(file_path, f"{name}.txt")
-        msg = await message.reply("Загрузка...")
+        msg = await message.reply(
+            'Загрузка...\n\nВ данный момент среднее время обработки файла '
+            '5 минут\n\nЕсли за 10 минут вам так и не '
+            'пришел ответ напишите @abstractionsupport'
+        )
         f = open(f'{name}.txt', 'r')
         text = f.read()
 
@@ -76,7 +80,7 @@ async def handle_pdf_or_txt_server(file, message, name):
         os.remove(f'uploaded_files/{name}')
 
     elif file.endswith('.pdf'):
-        msg = await message.reply("Загрузка...")
+        msg = await message.reply("")
 
         reader = PyPDF2.PdfReader(f'uploaded_files/{file}')
         text = ''
@@ -109,7 +113,11 @@ async def handle_pdf(
 ):
     try:
         await bot.download_file(file_path, f"{name}.pdf")
-        msg = await message.reply("Загрузка...")
+        msg = await message.reply(
+            'Загрузка...\n\nВ данный момент среднее время обработки файла '
+            '5 минут\n\nЕсли за 10 минут вам так и не '
+            'пришел ответ напишите @abstractionsupport'
+        )
 
         reader = PyPDF2.PdfReader(f'{name}.pdf')
         text = ''

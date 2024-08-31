@@ -13,10 +13,12 @@ async def checkpremium(callback: types.CallbackQuery):
     user_id = callback.from_user.id
     check = check_premium(user_id)
     if check is None:
-        await callback.message.answer(f'У вас нет премиума!\N{broken heart}')
+        await callback.message.answer('У вас нет премиума!\N{broken heart}')
 
     else:
-        await callback.message.answer(f'У вас есть премиум! Осталось: {check} дней.')
+        await callback.message.answer(
+            f'У вас есть премиум! Осталось: {check} дней.'
+        )
 
 
 @router.callback_query(F.data == 'getpremiums')

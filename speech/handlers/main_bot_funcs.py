@@ -1,4 +1,3 @@
-# flake8: noqa
 import os
 from aiogram import types, F, Router
 from aiogram.fsm.context import FSMContext
@@ -21,10 +20,11 @@ router = Router()
 async def voice(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(Voice.voice)
     await callback.message.answer(
-        f'Отправь голосовое сообщение или мп3 файл.\n\n'
+        'Отправь голосовое сообщение или мп3 файл.\n\n'
         'Если у тебя айфон, то ты можешь '
         'поделиться записью с диктофона и отправить боту.'
     )
+
 
 @router.message(Voice.voice, F.content_type.in_({'audio', 'voice'}))
 async def voice_message_handler(message: types.Message, state: FSMContext):
@@ -44,7 +44,12 @@ async def voice_message_handler(message: types.Message, state: FSMContext):
                 file_path = file.file_path
                 try:
                     await bot.download_file(file_path, f"{name}.mp3")
-                    msg = await message.reply("Загрузка...")
+                    msg = await message.reply(
+                        'Загрузка...\n\nИз-за высокой нагрузки файлы могут '
+                        'обрабатываться до 5-и минут\n\nЕсли за 10 минут '
+                        'вам так и не пришел ответ напишите '
+                        '@abstractionsupport'
+                    )
                     await main_speech_func(message, name, msg)
                     os.remove(f"{name}.mp3")
                 except FileExistsError:
@@ -58,7 +63,11 @@ async def voice_message_handler(message: types.Message, state: FSMContext):
             file = await bot.get_file(file_id)
             file_path = file.file_path
 
-            msg = await message.reply("Загрузка...")
+            msg = await message.reply(
+                'Загрузка...\n\nИз-за высокой нагрузки файлы могут '
+                'обрабатываться до 5-и минут\n\nЕсли за 10 минут вам так и не '
+                'пришел ответ напишите @abstractionsupport'
+            )
             try:
                 await bot.download_file(file_path, f"{name}.ogg")
                 to_mp3(f"{name}.ogg")
@@ -86,7 +95,8 @@ async def voice_message_handler(message: types.Message, state: FSMContext):
 
         keyboard.add(*kb)
         await message.answer(
-            f'У вас нет премиума! Что бы получить премиум, нажми "Получить премиум"!\n\n'
+            'У вас нет премиума! Что бы получить премиум,'
+            ' нажми "Получить премиум"!\n\n'
             'Если ты не пробовал, то нажми попробовать!',
             reply_markup=keyboard.adjust(1).as_markup()
         )
@@ -142,7 +152,7 @@ async def text_msg(message: types.Message, state: FSMContext):
 async def feedback(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(Feedback.feedback)
     await callback.message.answer(
-        f'Напиши свои пожелания и предложения \N{thinking face}'
+        'Напиши свои пожелания и предложения \N{thinking face}'
     )
 
 
@@ -154,4 +164,4 @@ async def feedback_msg(message: types.Message, state: FSMContext):
         f'{message.text}'
     )
     await bot.send_message(MY_CHAT_ID, text)
-    await message.answer(f'Спасибо за ваш отзыв!\N{green heart}')
+    await message.answer('Спасибо за ваш отзыв!\N{green heart}')

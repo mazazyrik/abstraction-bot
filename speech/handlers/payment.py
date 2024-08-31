@@ -33,29 +33,29 @@ async def get_premium(callback: types.CallbackQuery):
                 text='Партнерская подписка', callback_data='paied'),
         )
         await callback.message.answer(
-            f'Чтобы получить полный доступ - купи премиум.'
-            f'\N{money-mouth face}\n'
-            f'\nПрайс лист:\n'
-            f'1 месяц = 399 рублей. \n'
-            f'3 месяца = 999 рублей. \n'
-            f'9 месяцев = 3399 рублей. \n'
-            f'\nНажми "Оплатить" для оплаты.\n\n'
-            f'Если ты партнер, нажми "Партнерская подписка".',
+            'Чтобы получить полный доступ - купи премиум.'
+            '\N{money-mouth face}\n'
+            '\nПрайс лист:\n'
+            '1 месяц = 399 рублей. \n'
+            '3 месяца = 999 рублей. \n'
+            '9 месяцев = 3399 рублей. \n'
+            '\nНажми "Оплатить" для оплаты.\n\n'
+            'Если ты партнер, нажми "Партнерская подписка".',
             reply_markup=keyboard.adjust(1).as_markup()
         )
 
 
 @router.callback_query(F.data == 'paied')
-async def paied(callback: types.CallbackQuery, state: FSMContext):
-    await state.set_state(Premium.duration)
-    buttons = [
-        [types.KeyboardButton(text='1 месяц')],
-        [types.KeyboardButton(text='3 месяца')],
-        [types.KeyboardButton(text='9 месяцев')]
-    ]
-
-    markup = types.ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
-    await callback.message.answer('Выбери длительность премиума', reply_markup=markup)
+async def paied(callback: types.CallbackQuery,):
+    await premium_requests(
+        callback.from_user.username, callback.from_user.id, 1
+    )
+    await callback.answer(
+        'Ожидайте, пока оператор проверит вашу заявку!\n\n'
+        'Если оператор не отвечает в течении часа \N{unamused face} '
+        'свяжитесь с @abstractionsupport',
+        reply_markup=types.ReplyKeyboardRemove()
+    )
 
 
 @router.callback_query(F.data == 'pay')
@@ -68,7 +68,9 @@ async def pay(callback: types.CallbackQuery, state: FSMContext):
     ]
 
     markup = types.ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
-    await callback.message.answer('Выбери длительность премиума', reply_markup=markup)
+    await callback.message.answer(
+        'Выбери длительность премиума', reply_markup=markup
+    )
 
 
 @router.message(Premium.duration_for_payment)
@@ -129,8 +131,9 @@ async def yookassa(callback: types.CallbackQuery):
             )
 
         await callback.message.answer(
-            f'Спасибо за оплату!\n'
-            'Если премиум не будет выдан после оплаты \N{unamused face} свяжитесь с @abstractionsupport',
+            'Спасибо за оплату!\n'
+            'Если премиум не будет выдан после оплаты \N{unamused face} '
+            'свяжитесь с @abstractionsupport',
             reply_markup=types.ReplyKeyboardRemove()
         )
         await bot.send_message(
@@ -138,25 +141,10 @@ async def yookassa(callback: types.CallbackQuery):
     else:
         logging.error(payment)
         await callback.message.answer(
-            f'Оплата не прошла!\n'
-            'Если премиум не будет выдан после оплаты \N{unamused face} свяжитесь с @abstractionsupport',
+            'Оплата не прошла!\n'
+            'Если премиум не будет выдан после оплаты '
+            '\N{unamused face} свяжитесь с @abstractionsupport',
             reply_markup=types.ReplyKeyboardRemove()
         )
         await bot.send_message(
             MY_CHAT_ID, f'Оплата не прошла {payment.id}, {payment.status}')
-
-
-@router.message(Premium.duration)
-async def duration_msg(message: types.Message, state: FSMContext):
-    await state.clear()
-    if message.text == '1 месяц':
-        await premium_requests(message.from_user.username, message.from_user.id, 1)
-    elif message.text == '3 месяца':
-        await premium_requests(message.from_user.username, message.from_user.id, 3)
-    elif message.text == '9 месяцев':
-        await premium_requests(message.from_user.username, message.from_user.id, 9)
-    await message.answer(
-        f'Ожидайте, пока оператор проверит вашу заявку!\n\n'
-        f'Если оператор не отвечает в течении часа \N{unamused face} свяжитесь с @abstractionsupport',
-        reply_markup=types.ReplyKeyboardRemove()
-    )
