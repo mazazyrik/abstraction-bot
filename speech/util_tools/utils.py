@@ -108,12 +108,14 @@ async def main_speech_func(message, name, msg):
     os.remove(f"{name}_final.md")
 
 
-async def del_premium_request(username, user_id):
+async def del_premium_request(username, user_id, page=0):
     kb = [
         types.InlineKeyboardButton(
             text='Забрать премиум', callback_data='del_premium'),
         types.InlineKeyboardButton(text="В админку", callback_data='admin'),
-        types.InlineKeyboardButton(text="В меню", callback_data='menu')
+        types.InlineKeyboardButton(text="В меню", callback_data='menu'),
+        types.InlineKeyboardButton(text="Следующая страница",
+                                   callback_data=f'page_{page}'),
     ]
     keyboard = InlineKeyboardBuilder()
 

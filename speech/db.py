@@ -1,7 +1,7 @@
 import datetime
 from peewee import (
     PostgresqlDatabase, Model, CharField, BooleanField,
-    BigIntegerField, DateTimeField
+    BigIntegerField, DateTimeField, IntegerField
 )
 
 db = PostgresqlDatabase('postgres', user='postgres', password='1234',
@@ -29,6 +29,7 @@ class Guest(Model):
 
 
 class UserAuth(Model):
+    id = IntegerField(primary_key=True)
     username = CharField()
     premium = BooleanField(default=False)
     is_admin = BooleanField(default=False)
