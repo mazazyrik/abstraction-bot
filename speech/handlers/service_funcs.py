@@ -77,6 +77,36 @@ async def cmd_start(message: types.Message):
             reply_markup=keyboard.adjust(1).as_markup()
         )
 
+    elif Guest.select().where(Guest.user_id == user_id).exists():
+        name = message.from_user.full_name
+        kb = [
+            types.InlineKeyboardButton(
+                text="В меню", callback_data='menu'
+            ),
+
+
+        ]
+        keyboard = InlineKeyboardBuilder()
+        keyboard.add(*kb)
+        await message.answer(
+            f'Привет, {name}! \N{raised hand} \n'
+            'Добро пожаловать в бота Abstraction\N{TRADE MARK SIGN}.\n'
+            '\nПрошу тебя ознакомиться '
+            'с возможностями бота и перейти в меню. '
+            '\N{TRIANGULAR FLAG ON POST}\n'
+            '\nПЕРВЫЙ КОНСПЕКТ БЕСПЛАТНО \N{money-mouth face}.\n'
+            '\nБот умеет:\n'
+            '\N{DIGIT ONE}. '
+            ' Делать конспекты из голосовых сообщений\n'
+            '\N{DIGIT TWO}. '
+            ' Писать конспекты из сообщений\n'
+            '\N{DIGIT THREE}. '
+            ' Писать конспекты из файлов файлов\n'
+            '\nТакже, если ты нашел баг или хочешь предложить новую фишку - '
+            'напиши @abstractionsupport'
+            '\N{smiling face with sunglasses}',
+            reply_markup=keyboard.adjust(1).as_markup()
+        )
     else:
         kb = [
             types.InlineKeyboardButton(
