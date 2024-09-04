@@ -165,3 +165,4 @@ uploaded_files/
 *.mp3
 .identity.txt
 test_text.txt
+*.out

@@ -156,7 +156,7 @@ async def feedback(callback: types.CallbackQuery, state: FSMContext):
     )
 
 
-@ router.message(Feedback.feedback)
+@router.message(Feedback.feedback)
 async def feedback_msg(message: types.Message, state: FSMContext):
     await state.clear()
     text = (
