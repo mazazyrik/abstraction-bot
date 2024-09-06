@@ -10,6 +10,7 @@ from constants import MY_CHAT_ID
 from db import UserAuth, Guest
 from util_tools.utils import (
     check_premium,
+    m4a_to_mp3,
     main_speech_func,
     Voice,
     FileName,
@@ -29,7 +30,7 @@ async def menu(callback: types.CallbackQuery):
             text="Попробовать",
             callback_data='try'),
         types.InlineKeyboardButton(
-            text='Конспект из голосового', callback_data='voice'),
+            text='Конспект аудио лекции', callback_data='voice'),
         types.InlineKeyboardButton(
             text='Конспект сообщения', callback_data='text'),
         types.InlineKeyboardButton(
@@ -91,17 +92,19 @@ async def cmd_start(message: types.Message):
         await message.answer(
             f'Привет, {name}! \N{raised hand} \n'
             'Добро пожаловать в бота Abstraction\N{TRADE MARK SIGN}.\n'
+            'Лучший бот помощник в обучении, я умею писать конспектв из аудио,'
+            ' файлов и просто сообщений.\n'
             '\nПрошу тебя ознакомиться '
             'с возможностями бота и перейти в меню. '
             '\N{TRIANGULAR FLAG ON POST}\n'
             '\nПЕРВЫЙ КОНСПЕКТ БЕСПЛАТНО \N{money-mouth face}.\n'
             '\nБот умеет:\n'
             '\N{DIGIT ONE}. '
-            ' Делать конспекты из голосовых сообщений\n'
+            ' Делать конспекты из любых аудиофайлов\n'
             '\N{DIGIT TWO}. '
             ' Писать конспекты из сообщений\n'
             '\N{DIGIT THREE}. '
-            ' Писать конспекты из файлов файлов\n'
+            ' Писать конспекты из любых видов файлов\n'
             '\nТакже, если ты нашел баг или хочешь предложить новую фишку - '
             'напиши @abstractionsupport'
             '\N{smiling face with sunglasses}',
@@ -264,3 +267,7 @@ async def download_file(message: types.Message, state: FSMContext):
             'file donloaded and calculations are ready to prepare'
         )
         await handle_pdf_or_txt_server(name, message, name)
+    elif name.endswith('.m4a'):
+        name_m4a = m4a_to_mp3(name)
+
+        await main_speech_func(message, name_m4a, message)

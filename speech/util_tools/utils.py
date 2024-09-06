@@ -271,3 +271,13 @@ def check_payment(payment_id):
     Payment.capture(payment_id)
     payment = yookassa.Payment.find_one(payment_id)
     return payment
+
+
+def m4a_to_mp3(file_path):
+    os.system(
+        f'ffmpeg -i uploaded_files/{file_path} -vn -ar 44100 '
+        f'-ac 2 -b:a 192k -y uploaded_files/{
+            file_path[:-3]}mp3'
+    )
+
+    return file_path[:-3] + 'mp3'
