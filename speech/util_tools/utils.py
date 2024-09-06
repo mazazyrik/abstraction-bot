@@ -177,7 +177,10 @@ async def bot_get_file(file_id, message):
         await message.reply(
             'Файл слишком большой.\n\n'
             'Пожалуйста, загрузи файл на сайт http://abstraction.sytes.net '
-            'скопируй название файла и нажми кнопку "Загрузил".',
+            'скопируй название файла и нажми кнопку "Загрузил".\n\n'
+            'Если ты загружал запись диктофона айфона, то сохрани ее в файлы'
+            ' и также загрузи на сайт. Если что-то не получается, '
+            'то свяжись с @abstraction.support',
             reply_markup=keyboard.adjust(1).as_markup()
         )
         return None
