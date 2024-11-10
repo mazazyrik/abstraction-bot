@@ -277,10 +277,11 @@ def check_payment(payment_id):
 
 
 def m4a_to_mp3(file_path):
+    output_path = f'uploaded_files/{file_path[:-4]}.mp3'
+
     os.system(
         f'ffmpeg -i uploaded_files/{file_path} -vn -ar 44100 '
-        f'-ac 2 -b:a 192k -y uploaded_files/{
-            file_path[:-3]}mp3'
+        f'-ac 2 -b:a 192k -y {output_path}'
     )
 
-    return file_path[:-3] + 'mp3'
+    return output_path
