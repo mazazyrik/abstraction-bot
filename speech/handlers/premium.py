@@ -26,5 +26,20 @@ async def get_premiums(callback: types.CallbackQuery):
     premium_users = UserAuth.select().where(UserAuth.premium == True)
     if list(premium_users) == []:
         await callback.message.answer('Никто не имеет премиума!')
-    for user in premium_users:
-        await del_premium_request(user.username, int(user.user_id))
+    else:
+        await del_premium_request(premium_users[0].username,
+                                  premium_users[0].user_id, page=1)
+
+
+@router.callback_query(lambda c: 'page' in c.data)
+async def next_page(callback: types.CallbackQuery):
+    page = int(callback.data.split('_')[-1])
+    premium_users = UserAuth.select().where(UserAuth.premium == True)
+    user = None
+    try:
+        user = premium_users[page]
+    except IndexError:
+        await callback.message.answer('Больше нет пользователей!')
+    if user is not None:
+        await del_premium_request(user.username,
+                                  user.user_id, page + 1)

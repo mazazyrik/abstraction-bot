@@ -108,12 +108,14 @@ async def main_speech_func(message, name, msg):
     os.remove(f"{name}_final.md")
 
 
-async def del_premium_request(username, user_id):
+async def del_premium_request(username, user_id, page=0):
     kb = [
         types.InlineKeyboardButton(
             text='Забрать премиум', callback_data='del_premium'),
         types.InlineKeyboardButton(text="В админку", callback_data='admin'),
-        types.InlineKeyboardButton(text="В меню", callback_data='menu')
+        types.InlineKeyboardButton(text="В меню", callback_data='menu'),
+        types.InlineKeyboardButton(text="Следующая страница",
+                                   callback_data=f'page_{page}'),
     ]
     keyboard = InlineKeyboardBuilder()
 
@@ -175,7 +177,10 @@ async def bot_get_file(file_id, message):
         await message.reply(
             'Файл слишком большой.\n\n'
             'Пожалуйста, загрузи файл на сайт http://abstraction.sytes.net '
-            'скопируй название файла и нажми кнопку "Загрузил".',
+            'скопируй название файла и нажми кнопку "Загрузил".\n\n'
+            'Если ты загружал запись диктофона айфона, то сохрани ее в файлы'
+            ' и также загрузи на сайт. Если что-то не получается, '
+            'то свяжись с @abstraction.support',
             reply_markup=keyboard.adjust(1).as_markup()
         )
         return None
@@ -269,3 +274,13 @@ def check_payment(payment_id):
     Payment.capture(payment_id)
     payment = yookassa.Payment.find_one(payment_id)
     return payment
+
+
+def m4a_to_mp3(file_path):
+    os.system(
+        f'ffmpeg -i uploaded_files/{file_path} -vn -ar 44100 '
+        f'-ac 2 -b:a 192k -y uploaded_files/{
+            file_path[:-3]}mp3'
+    )
+
+    return file_path[:-3] + 'mp3'

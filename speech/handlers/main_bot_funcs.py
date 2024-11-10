@@ -60,29 +60,31 @@ async def voice_message_handler(message: types.Message, state: FSMContext):
 
         else:
             file_id = message.voice.file_id
-            file = await bot.get_file(file_id)
-            file_path = file.file_path
+            file = await bot_get_file(file_id, message)
+            if file is not None:
+                file_path = file.file_path
 
-            msg = await message.reply(
-                'Загрузка...\n\nИз-за высокой нагрузки файлы могут '
-                'обрабатываться до 5-и минут\n\nЕсли за 10 минут вам так и не '
-                'пришел ответ напишите @abstractionsupport'
-            )
-            try:
-                await bot.download_file(file_path, f"{name}.ogg")
-                to_mp3(f"{name}.ogg")
-                await main_speech_func(message, name, msg)
-                os.remove(f"{name}.ogg")
-                os.remove(f"{name}.mp3")
-
-                if name in aval_guests:
-                    Guest.update(made_speech=True).where(
-                        Guest.user_id == message.from_user.id).execute()
-            except FileExistsError:
-                await message.reply(
-                    "Вы не можете отправить новый запрос, "
-                    "пока не закончите предыдущий!"
+                msg = await message.reply(
+                    'Загрузка...\n\nИз-за высокой нагрузки файлы могут '
+                    'обрабатываться до 5-и минут\n\nЕсли за 10 минут'
+                    ' вам так и не '
+                    'пришел ответ напишите @abstractionsupport'
                 )
+                try:
+                    await bot.download_file(file_path, f"{name}.ogg")
+                    to_mp3(f"{name}.ogg")
+                    await main_speech_func(message, name, msg)
+                    os.remove(f"{name}.ogg")
+                    os.remove(f"{name}.mp3")
+
+                    if name in aval_guests:
+                        Guest.update(made_speech=True).where(
+                            Guest.user_id == message.from_user.id).execute()
+                except FileExistsError:
+                    await message.reply(
+                        "Вы не можете отправить новый запрос, "
+                        "пока не закончите предыдущий!"
+                    )
 
     else:
         kb = [
@@ -156,7 +158,7 @@ async def feedback(callback: types.CallbackQuery, state: FSMContext):
     )
 
 
-@ router.message(Feedback.feedback)
+@router.message(Feedback.feedback)
 async def feedback_msg(message: types.Message, state: FSMContext):
     await state.clear()
     text = (

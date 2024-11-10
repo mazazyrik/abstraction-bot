@@ -10,6 +10,7 @@ from constants import MY_CHAT_ID
 from db import UserAuth, Guest
 from util_tools.utils import (
     check_premium,
+    m4a_to_mp3,
     main_speech_func,
     Voice,
     FileName,
@@ -29,7 +30,7 @@ async def menu(callback: types.CallbackQuery):
             text="Попробовать",
             callback_data='try'),
         types.InlineKeyboardButton(
-            text='Конспект из голосового', callback_data='voice'),
+            text='Конспект аудио лекции', callback_data='voice'),
         types.InlineKeyboardButton(
             text='Конспект сообщения', callback_data='text'),
         types.InlineKeyboardButton(
@@ -72,14 +73,13 @@ async def cmd_start(message: types.Message):
         ))
         await message.answer(
             f'Привет, {name}!\N{raised hand} Я смотрю '
-            f'ты уже смершарик, \N{smiling face with sunglasses}'
-            f' так что вот тебе меню!\n'
-            f'\nДля конспекта из аудио отправь голосовое '
-            f'сообщение или файл с расширением .mp3\n',
+            'ты уже смешарик, \N{smiling face with sunglasses}'
+            ' так что вот тебе меню!\n',
             reply_markup=keyboard.adjust(1).as_markup()
         )
 
-    else:
+    elif Guest.select().where(Guest.user_id == user_id).exists():
+        name = message.from_user.full_name
         kb = [
             types.InlineKeyboardButton(
                 text="В меню", callback_data='menu'
@@ -90,24 +90,117 @@ async def cmd_start(message: types.Message):
         keyboard = InlineKeyboardBuilder()
         keyboard.add(*kb)
         await message.answer(
-            'Привет, {name}! \N{raised hand} \n'
+            f'Привет, {name}! \N{raised hand} \n'
             'Добро пожаловать в бота Abstraction\N{TRADE MARK SIGN}.\n'
+            'Лучший бот помощник в обучении, я умею писать конспектв из аудио,'
+            ' файлов и просто сообщений.\n'
             '\nПрошу тебя ознакомиться '
             'с возможностями бота и перейти в меню. '
             '\N{TRIANGULAR FLAG ON POST}\n'
             '\nПЕРВЫЙ КОНСПЕКТ БЕСПЛАТНО \N{money-mouth face}.\n'
             '\nБот умеет:\n'
             '\N{DIGIT ONE}. '
-            ' Делать конспекты из голосовых сообщений\n'
+            ' Делать конспекты из любых аудиофайлов\n'
             '\N{DIGIT TWO}. '
             ' Писать конспекты из сообщений\n'
             '\N{DIGIT THREE}. '
-            ' Писать конспекты из файлов файлов\n'
+            ' Писать конспекты из любых видов файлов\n'
             '\nТакже, если ты нашел баг или хочешь предложить новую фишку - '
             'напиши @abstractionsupport'
             '\N{smiling face with sunglasses}',
             reply_markup=keyboard.adjust(1).as_markup()
         )
+    else:
+        kb = [
+            types.InlineKeyboardButton(
+                text="Я согласен", callback_data='terms'
+            ),
+
+
+        ]
+        keyboard = InlineKeyboardBuilder()
+        keyboard.add(*kb)
+        conditions_of_use = (
+            "1. Разрешение на запись\n"
+            "Пользователи обязаны получать разрешение на запись лекций"
+            " у преподавателей "
+            "или других правообладателей. Ответственность за соблюдение"
+            " данного требования "
+            "лежит исключительно на пользователях.\n\n"
+
+            "2. Хранение аудиоданных\n"
+            "Аудиоданные, загружаемые пользователями, временно "
+            "хранятся на сервере для "
+            "обработки запросов. Мы не гарантируем сохранность данных"
+            " после завершения обработки.\n\n"
+
+            "3. Авторские права на файлы\n"
+            "Все файлы, загружаемые пользователями, должны быть согласованы"
+            " с правообладателями. "
+            "Мы не несем ответственности за нарушение авторских прав.\n\n"
+
+            "4. Сбор личных данных\n"
+            "Бот может собирать некоторые личные данные, такие как никнейм"
+            " и ID пользователя. "
+            "Эти данные используются исключительно для функционирования бота"
+            " и не передаются третьим лицам.\n\n"
+
+            "5. Генерируемые данные\n"
+            "Все данные, сгенерированные ботом, не являются учебными"
+            " и могут использоваться "
+            "пользователями только в личных целях."
+            " Мы не несем ответственности за последствия "
+            "их использования.\n\n"
+
+            "6. Отказ от ответственности\n"
+            "Используя данного бота, вы подтверждаете, что ознакомлены"
+            " с вышеуказанными условиями "
+            "и принимаете на себя полную ответственность за свои действия.\n\n"
+
+            "Пожалуйста, используйте бот ответственно!"
+        )
+
+        await message.answer(
+            'Перед использованием прошу ознакомиться '
+            'с условиями использования бота.\n'
+            'Все права защищены. \n'
+            'Если вы согласны с условиями, нажмите "Я согласен"\n'
+            + conditions_of_use,
+            reply_markup=keyboard.adjust(1).as_markup()
+        )
+
+
+@router.callback_query(F.data == 'terms')
+async def terms(callback: types.CallbackQuery):
+    name = callback.from_user.full_name
+    kb = [
+        types.InlineKeyboardButton(
+            text="В меню", callback_data='menu'
+        ),
+
+
+    ]
+    keyboard = InlineKeyboardBuilder()
+    keyboard.add(*kb)
+    await callback.message.answer(
+        f'Привет, {name}! \N{raised hand} \n'
+        'Добро пожаловать в бота Abstraction\N{TRADE MARK SIGN}.\n'
+        '\nПрошу тебя ознакомиться '
+        'с возможностями бота и перейти в меню. '
+        '\N{TRIANGULAR FLAG ON POST}\n'
+        '\nПЕРВЫЙ КОНСПЕКТ БЕСПЛАТНО \N{money-mouth face}.\n'
+        '\nБот умеет:\n'
+        '\N{DIGIT ONE}. '
+        ' Делать конспекты из голосовых сообщений\n'
+        '\N{DIGIT TWO}. '
+        ' Писать конспекты из сообщений\n'
+        '\N{DIGIT THREE}. '
+        ' Писать конспекты из файлов файлов\n'
+        '\nТакже, если ты нашел баг или хочешь предложить новую фишку - '
+        'напиши @abstractionsupport'
+        '\N{smiling face with sunglasses}',
+        reply_markup=keyboard.adjust(1).as_markup()
+    )
 
 
 @router.callback_query(F.data == 'try')
@@ -174,3 +267,7 @@ async def download_file(message: types.Message, state: FSMContext):
             'file donloaded and calculations are ready to prepare'
         )
         await handle_pdf_or_txt_server(name, message, name)
+    elif name.endswith('.m4a'):
+        name_m4a = m4a_to_mp3(name)
+
+        await main_speech_func(message, name_m4a, message)
