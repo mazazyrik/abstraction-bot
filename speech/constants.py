@@ -1,9 +1,19 @@
+"""
+Constants module for SpeechAI bot.
+Contains configuration values loaded from environment variables.
+"""
+import os
 from aiogram import Bot
+from dotenv import load_dotenv
 
-TOKEN = "7380916922:AAE-Ao-ne01XaGH48Bz3kXWOV1ENV6IT9r4"  # боевой
-# TOKEN = '7149556054:AAFPIKcoj97DvflYdaCVlFtbNRJb4QKb87I'
+# Load environment variables
+load_dotenv()
 
+# Telegram Bot
+TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+MY_CHAT_ID = int(os.getenv('TELEGRAM_MY_CHAT_ID', 0))
 bot = Bot(token=TOKEN)
-MY_CHAT_ID = 387435447
-PAYMENTS_TOKEN = 'live_ABsj4vncAZxR3WZCJwZb5msJOo3rH7iKAmlxd__MZeA'
-PAYMENT_ID = '440872'
+
+# YooKassa Payments
+PAYMENTS_TOKEN = os.getenv('YOOKASSA_PAYMENTS_TOKEN')
+PAYMENT_ID = os.getenv('YOOKASSA_PAYMENT_ID')

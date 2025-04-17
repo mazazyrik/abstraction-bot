@@ -1,3 +1,9 @@
+"""
+Chat handling module for SpeechAI bot.
+Manages conversation flow, message processing, and AI responses.
+Integrates with OpenAI API for natural language processing.
+"""
+
 import logging
 import asyncio
 from prompt import prompt as base_prompt

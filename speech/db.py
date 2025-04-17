@@ -1,3 +1,9 @@
+"""
+Database module for SpeechAI bot.
+Handles database connection, models, and migrations.
+Uses SQLAlchemy for ORM and Alembic for migrations.
+"""
+
 import datetime
 from peewee import (
     SqliteDatabase, Model, CharField, BooleanField,

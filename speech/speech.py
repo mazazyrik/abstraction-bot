@@ -1,3 +1,9 @@
+"""
+Speech processing module for SpeechAI bot.
+Handles voice message transcription and audio processing.
+Uses OpenAI Whisper for speech recognition.
+"""
+
 import whisper
 import ssl
 import torch

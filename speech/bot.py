@@ -1,3 +1,8 @@
+"""
+Telegram bot initialization and configuration module.
+Handles bot setup, middleware configuration, and command registration.
+"""
+
 import asyncio
 import logging
 
