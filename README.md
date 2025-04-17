@@ -18,7 +18,7 @@ SpeechAI is an advanced Telegram bot that combines voice recognition and AI capa
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/speechai.git
+git clone https://github.com/mazazyrik/speechai.git
 cd speechai
 ```
 
@@ -69,7 +69,7 @@ SpeechAI - это продвинутый Telegram бот, объединяющи
 
 1. Клонируйте репозиторий:
 ```bash
-git clone https://github.com/yourusername/speechai.git
+git clone https://github.com/mazazyrik/speechai.git
 cd speechai
 ```
 
